@@ -22,7 +22,7 @@ class AresReceiver:
         self._heartbeat_running = False
 
         sm_class = self._get_dev_class()
-        self._sm_dev = sm_class(SMConfigs(gps_timestamping=gps_stamping, gps_model=model.value))
+        self._sm_dev = sm_class(SMConfigs(gps_model=model.value))
         self._gps_stamping = gps_stamping
 
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
@@ -59,14 +59,13 @@ class AresReceiver:
     def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path):
         self._sm_dev.open()
         if self._gps_stamping:
-            self._sm_dev.acquire_gps_lock(GpsState.DISCIPLINED)
+            self._sm_dev.enable_gps_timestamping(True)
         self._dev_ready.set()
 
         self._start_signal.wait()
 
         with self._heartbeat_lock:
-            # TODO: Wait until specified time
-            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory)
+            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory, gps_start_time=self._start_time_sec)
             self._dev_ready.clear()
         
         self._start_signal.clear()

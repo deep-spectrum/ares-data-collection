@@ -40,7 +40,7 @@ requires-dist = [
 [[package]]
 name = "ares-iq"
 version = "0.0.0"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#b1a5dfdab1df0e0ff902372c7f04aa9c1a1b3f17" }
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#6a89a9bcf9a2949840807cb931ba84c62a32f9d2" }
 dependencies = [
     { name = "ares-iq-extensions" },
     { name = "attrs" },
@@ -56,7 +56,7 @@ dependencies = [
 [[package]]
 name = "ares-iq-extensions"
 version = "0.0.5"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#b1a5dfdab1df0e0ff902372c7f04aa9c1a1b3f17" }
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#6a89a9bcf9a2949840807cb931ba84c62a32f9d2" }
 dependencies = [
     { name = "numpy" },
 ]
@@ -266,11 +266,11 @@ wheels = [
 
 [[package]]
 name = "idna"
-version = "3.17"
+version = "3.18"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/b9/28/99c51f664567218d824af024c0251650fb27e4ca066df188dab0769c5b91/idna-3.17.tar.gz", hash = "sha256:5eb0cb53bc467c12eadcf6de83163ad8527cec9416f44b9b61b19caedad2b87f", size = 196048, upload-time = "2026-05-28T14:32:38.55Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/63/9496c57188a2ee585e0f1db071d75089a11e98aa86eb99d9d7618fc1edce/idna-3.18.tar.gz", hash = "sha256:ffb385a7e039654cef1ab9ef32c6fafe283c0c0467bba1d9029738ce4a14a848", size = 196711, upload-time = "2026-06-02T14:34:07.794Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/de/a7/f76514cc40ad6234098ecdebda08732d75964776c51a42845b7da10649e2/idna-3.17-py3-none-any.whl", hash = "sha256:466e48829084efe2548012b855df21540b96f2e20e51bd124c851536556a592c", size = 65316, upload-time = "2026-05-28T14:32:37.035Z" },
+    { url = "https://files.pythonhosted.org/packages/1e/5e/d4e9f1a599fb8e573b7b87160658329fbf28d19eac2718f51fc3def3aa5a/idna-3.18-py3-none-any.whl", hash = "sha256:7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2", size = 65455, upload-time = "2026-06-02T14:34:06.319Z" },
 ]
 
 [[package]]
@@ -540,34 +540,34 @@ wheels = [
 
 [[package]]
 name = "smp"
-version = "4.0.2"
+version = "4.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "cbor2" },
     { name = "crcmod" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/26/3d/2fff3d2fb96f371eaa2621e1d5478db3f27fe11c8c01e8c7320997fb71d5/smp-4.0.2.tar.gz", hash = "sha256:11ea847fb6ebfdd4fe9240bfa48c03e7030f74a1372c1fb1672a9988aab8d87f", size = 26514, upload-time = "2025-12-18T00:38:03.642Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0b/3a/2a5017d4ed321389f242f26392d1cadfa36d9c6f235206b26491df83aafb/smp-4.1.0.tar.gz", hash = "sha256:def270346a9f67e99e526a3c789a814e6e2203afa4d913cb11bb5a9bda6423a9", size = 26936, upload-time = "2026-06-03T02:00:01.347Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/a3/2eff5abb16f641113d315036a6d4a5c2e75dccc64df4331ac82098549d41/smp-4.0.2-py3-none-any.whl", hash = "sha256:734f84d2a44dc408a10553373b3a525b9f8c9ce25579b6259e228a346b7413a2", size = 32489, upload-time = "2025-12-18T00:38:01.546Z" },
+    { url = "https://files.pythonhosted.org/packages/ea/c5/8a6625c8afd8b96865546310da0ac6b83a5700a9892c0e9b923b0ff1af61/smp-4.1.0-py3-none-any.whl", hash = "sha256:ca06376b130f028e02dc147a82f1f32bd1ce8e9397b23a0d6d391f7de76e883c", size = 32969, upload-time = "2026-06-03T02:00:00.014Z" },
 ]
 
 [[package]]
 name = "smpclient"
-version = "7.0.1"
+version = "7.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "intelhex" },
     { name = "smp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/54/93/55a0883b5cd4a81263797c03e8646e2b105bbe810f90d290e8f05887e234/smpclient-7.0.1.tar.gz", hash = "sha256:332b3e891413413a412f69d3457b13f7b3678ef58f6ac4a0606697a8a52efc82", size = 4075847, upload-time = "2026-05-22T19:25:35.566Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/24/7c/307fa48d6d4a93a8b13c7449135b5e03f588dbcd474a318654bd9803fcba/smpclient-7.1.0.tar.gz", hash = "sha256:3aba6fbd520af052c0a983ec995f0a551463c65673f4afbee77f7a6c5081a36c", size = 4174362, upload-time = "2026-05-29T18:50:29.818Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/2c/fd/1e9df5a31463403e9251fb8d6f32414b9e98b4b5e995fb5a0961eabc2119/smpclient-7.0.1-py3-none-any.whl", hash = "sha256:cc9f7d465e77ce4ca1c13378a9aa7de10ecaff131e79c162ed17fb601661fe46", size = 33585, upload-time = "2026-05-22T19:25:34.185Z" },
+    { url = "https://files.pythonhosted.org/packages/b1/62/4ec38366f3606ecf57c83a4193af172480e958f9c194a2e483cd5c2b9d8c/smpclient-7.1.0-py3-none-any.whl", hash = "sha256:2fa28e8994e07151739d2fb9ad8805d10c3eff3c0d82b69768715a9424fe65ed", size = 50690, upload-time = "2026-05-29T18:50:28.123Z" },
 ]
 
 [[package]]
 name = "typer"
-version = "0.26.3"
+version = "0.26.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "annotated-doc" },
@@ -575,9 +575,9 @@ dependencies = [
     { name = "rich" },
     { name = "shellingham" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/15/f5fc7be23b7196bc065b282d9589a372392fb10860c80f9c1dd7eb008662/typer-0.26.3.tar.gz", hash = "sha256:3e2b9352f535e5303ef27806dadc2c8647687bdca5c902f03fec3fb88f46a46a", size = 198326, upload-time = "2026-05-28T20:30:50.984Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5e/ed/ef06584ccdd5c410df0837951ecd7e15d9a6144ea1bd4c73cecab1a89891/typer-0.26.7.tar.gz", hash = "sha256:e314a34c617e419c091b2830dda3ea1f257134ff593061a8f5b9717ab8dddb3a", size = 201709, upload-time = "2026-06-03T07:18:06.843Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cd/cc/c6c5dea061e2740355bfeef22ac6a41751bd2f3903e83921295569bdcec4/typer-0.26.3-py3-none-any.whl", hash = "sha256:e70549ec5a403ca8a0bf0802ddd9f3c6ff7a14ccbb859b01b697baa943636f33", size = 122338, upload-time = "2026-05-28T20:30:49.816Z" },
+    { url = "https://files.pythonhosted.org/packages/24/25/2201973529af2c954de0bb725323c3aaed6d7f0ceee8f550dec9185df013/typer-0.26.7-py3-none-any.whl", hash = "sha256:5c87cfbc5d34491c5346ebf49c23e18d56ccb863268d3a8d592b26087c2f5e58", size = 122456, upload-time = "2026-06-03T07:18:05.732Z" },
 ]
 
 [[package]]
