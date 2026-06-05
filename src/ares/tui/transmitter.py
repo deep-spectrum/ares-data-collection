@@ -11,21 +11,22 @@ class Footer(Placeholder):
     pass
 
 
-class AresReceiverScreen(Screen):
+class AresTransmitterScreen(Screen):
     def compose(self) -> ComposeResult:
         yield Header(id='Header')
         yield Footer(id='Footer')
 
 
-class AresReceiverLayoutApp(App):
+class AresTransmitterLayoutApp(App):
     def on_ready(self) -> None:
-        self.push_screen(AresReceiverScreen())
+        self.push_screen(AresTransmitterScreen())
 
 
 def main():
-    app = AresReceiverLayoutApp()
+    app = AresTransmitterLayoutApp()
     app.run()
 
 
 if __name__ == "__main__":
     main()
+
