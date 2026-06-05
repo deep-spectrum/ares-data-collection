@@ -1,3 +1,7 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
 [project]
 name = "ares"
 version = "0.0.0"
@@ -7,9 +11,18 @@ requires-python = ">=3.12"
 dependencies = [
     "ares-iq",
     "ares-lora",
+    "textual>=8.2.7",
     "typer>=0.26.3",
 ]
+
+[project.scripts]
+ares-receiver = "ares.tui.receiver:main"
 
 [tool.uv.sources]
 ares-iq = { git = "https://github.com/deep-spectrum/Ares-IQ.git", rev = "master" }
 ares-lora = { git = "https://github.com/deep-spectrum/ares-lora.git", subdirectory = "serial-driver", rev = "v1.0.0" }
+
+[dependency-groups]
+dev = [
+    "textual-dev>=1.8.0",
+]
