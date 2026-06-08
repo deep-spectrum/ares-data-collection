@@ -1,4 +1,4 @@
-from ares_iq.signal_hound import SM200C, SM435C, SMConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType
+from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
@@ -24,7 +24,7 @@ class AresReceiver:
         self._heartbeat_running = False
 
         sm_class = self._get_dev_class()
-        self._sm_dev = sm_class(SMConfigs(gps_model=model.value))
+        self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
         self._sm_dev.set_log_level(logging.DEBUG)
         self._sm_dev.open()
         self._gps_stamping = gps_stamping
