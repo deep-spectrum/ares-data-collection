@@ -6,6 +6,7 @@ import time
 from datetime import timedelta
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, Future
+import logging
 
 
 class AresReceiver:
@@ -16,6 +17,7 @@ class AresReceiver:
         )
 
         self._lora_dev = LoraSerial(lora_configs)
+        self._lora_dev.set_logging_level(logging.DEBUG)
         self._lora_dev.start_driver()
         self._dev_ready = threading.Event()
         self._heartbeat_lock = threading.Lock()
