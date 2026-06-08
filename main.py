@@ -11,28 +11,39 @@ import logging
 
 class AresReceiver:
     def __init__(self, lora_port: str, gps_stamping: bool, model: GpsModel = GpsModel.STATIONARY):
+        print("Serial conf")
         lora_configs = LoraSerialConfig(
             port=lora_port,
             start_callback=self._lora_start_cb
         )
 
+        print("Lora serial dev")
         self._lora_dev = LoraSerial(lora_configs)
+        print("Set debug level")
         self._lora_dev.set_logging_level(logging.DEBUG)
+        print("Start driver")
         self._lora_dev.start_driver()
+        print("Dev ready event")
         self._dev_ready = threading.Event()
+        print("Heartbeat lock")
         self._heartbeat_lock = threading.Lock()
         self._heartbeat_running = False
 
+        print("Dev class")
         sm_class = self._get_dev_class()
+        print("Class creation")
         self._sm_dev = sm_class(SMConfigs(gps_model=model.value))
         self._gps_stamping = gps_stamping
 
+        print("Thread pool stuff")
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
         self._lora_heartbeat_future: Future[None] | None = None
 
+        print("Event")
         self._start_signal = threading.Event()
         self._start_time_sec: int = 0
         self._start_time_ns: int = 0
+        print("Done")
 
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
