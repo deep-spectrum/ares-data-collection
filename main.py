@@ -1,4 +1,4 @@
-from ares_iq.signal_hound import SM200C, SM435C, SMConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState
+from ares_iq.signal_hound import SM200C, SM435C, SMConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
@@ -39,10 +39,10 @@ class AresReceiver:
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
         devices = sm_get_device_list(usb=False, max_network_devices=1)
-        if devices[0].type == SmDevice.type.SM200C:
+        if devices[0].type == SmDeviceType.SM200C:
             print("SM200C found")
             return SM200C
-        elif devices[0].type == SmDevice.type.SM435C:
+        elif devices[0].type == SmDeviceType.SM435C:
             print("SM435C found")
             return SM435C
         else:
