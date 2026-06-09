@@ -79,6 +79,7 @@ class AresReceiver:
             raise RuntimeError("Already running")
         self._heartbeat_running = True
         self._lora_heartbeat_future = self._tasks.submit(self._lora_heartbeat)
+        self._lora_dev.set_logging_level(logging.WARNING)
 
     def stop(self):
         if not self._heartbeat_running:
@@ -115,6 +116,7 @@ class AresTransmitter:
         self._running_node_list_manager = True
 
         self._lora_dev = LoraSerial(lora_configs)
+        self._lora_dev.set_logging_level(logging.DEBUG)
 
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
         self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
