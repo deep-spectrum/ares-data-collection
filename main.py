@@ -3,11 +3,12 @@ from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, L
     LoraSpreadingFactor, LoraBandwidth
 import threading
 import time
-from datetime import timedelta
+from datetime import timedelta, datetime
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor, Future
 import logging
-
+from dataclasses import dataclass
+import ares_iq_ext
 
 class AresReceiver:
     def __init__(self, lora_port: str, gps_stamping: bool, model: GpsModel = GpsModel.STATIONARY):
@@ -94,3 +95,64 @@ class AresReceiver:
         self._tasks.shutdown()
         self._sm_dev.close()
         self._lora_dev.stop_driver()
+
+
+@dataclass
+class AresNode:
+    ready: bool
+    last_update: datetime
+
+
+class AresTransmitter:
+
+    def __init__(self, lora_port: str, gps_stamping: bool, node_timeout: timedelta):
+        lora_configs = LoraSerialConfig(port=lora_port, master=True, heartbeat_callback=self._heartbeat_callback)
+        self._nodes: dict[int, AresNode] = {}
+        self._gps_timestamping = gps_stamping
+        self._neighbor_lock = threading.Lock()
+
+        self._timeout = node_timeout
+        self._running_node_list_manager = True
+
+        self._lora_dev = LoraSerial(lora_configs)
+
+        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
+        self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
+
+        self._lora_dev.start_driver()
+
+    def _heartbeat_callback(self, node_id: int, ready: bool):
+        with self._neighbor_lock:
+            if node_id not in self._nodes:
+                print("Adding node", node_id)
+            self._nodes[node_id] = AresNode(ready, datetime.now())
+
+    def _neighbor_manager(self):
+        while self._running_node_list_manager:
+            nodes_to_remove = []
+            with self._neighbor_lock:
+                for node_id, meta in self._nodes.items():
+                    timedelta_since_last_update = datetime.now() - meta.last_update
+                    if timedelta_since_last_update > self._timeout:
+                        nodes_to_remove.append(node_id)
+                for node_id in nodes_to_remove:
+                    del self._nodes[node_id]
+            time.sleep(2.0)
+
+
+
+    def start(self, start_delay_sec: int, start_delay_usec: int):
+        if start_delay_sec < 0 or start_delay_usec < 0:
+            raise ValueError("start delay values cannot be negative")
+
+        now_sec, now_usec = ares_iq_ext.time_now()
+        start_sec, start_usec = ares_iq_ext.add_time(now_sec, now_usec, start_delay_sec, start_delay_usec)
+
+        self._lora_dev.start(start_sec, start_usec)
+
+    def __del__(self):
+        self._lora_dev.stop_driver()
+        self._running_node_list_manager = False
+        self._node_manager_future.result()
+        self._tasks.shutdown()
+

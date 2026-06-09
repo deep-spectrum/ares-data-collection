@@ -185,7 +185,7 @@ dev = [{ name = "textual-dev", specifier = ">=1.8.0" }]
 [[package]]
 name = "ares-iq"
 version = "0.0.0"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#fb44d24fc0a161758cf7566bfc454547e4612f47" }
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#42449afeba951903dac36d68a6298e00ee51cb25" }
 dependencies = [
     { name = "ares-iq-extensions" },
     { name = "attrs" },
@@ -201,8 +201,8 @@ dependencies = [
 
 [[package]]
 name = "ares-iq-extensions"
-version = "0.0.7"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#fb44d24fc0a161758cf7566bfc454547e4612f47" }
+version = "0.0.8"
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#42449afeba951903dac36d68a6298e00ee51cb25" }
 dependencies = [
     { name = "numpy" },
 ]
