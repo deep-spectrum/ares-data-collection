@@ -54,7 +54,7 @@ class AresReceiver:
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 self._lora_dev.send_heartbeat(ready)
-            time.sleep(1.0)
+            time.sleep(5.0)
 
     def _lora_start_cb(self, seconds: int, nanoseconds: int):
         self._start_time_sec = seconds
@@ -138,6 +138,7 @@ class AresTransmitter:
                     if timedelta_since_last_update > self._timeout:
                         nodes_to_remove.append(node_id)
                 for node_id in nodes_to_remove:
+                    print("Removing node", node_id)
                     del self._nodes[node_id]
             time.sleep(2.0)
 
