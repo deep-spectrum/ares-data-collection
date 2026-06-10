@@ -210,7 +210,7 @@ dependencies = [
 [[package]]
 name = "ares-lora"
 version = "1.1.0"
-source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=serial-driver-gil#241ebbf82f0dd1f1678e3c3b74f9dd86fc0bfd26" }
+source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=serial-driver-gil#06acfbcd16185be2db086f627e6a92d3626f0c26" }
 dependencies = [
     { name = "ares-lora-core" },
     { name = "pyserial" },
@@ -220,7 +220,7 @@ dependencies = [
 [[package]]
 name = "ares-lora-core"
 version = "1.1.0"
-source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver%2Fcore&rev=serial-driver-gil#241ebbf82f0dd1f1678e3c3b74f9dd86fc0bfd26" }
+source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver%2Fcore&rev=serial-driver-gil#06acfbcd16185be2db086f627e6a92d3626f0c26" }
 
 [[package]]
 name = "attrs"

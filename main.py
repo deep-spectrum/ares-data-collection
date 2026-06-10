@@ -18,7 +18,7 @@ class AresReceiver:
         )
 
         self._lora_dev = LoraSerial(lora_configs)
-        self._lora_dev.set_logging_level(logging.DEBUG)
+        self._lora_dev.set_logging_level(logging.INFO)
         self._lora_dev.start_driver()
         self._dev_ready = threading.Event()
         self._heartbeat_lock = threading.Lock()
@@ -116,7 +116,7 @@ class AresTransmitter:
         self._running_node_list_manager = True
 
         self._lora_dev = LoraSerial(lora_configs)
-        self._lora_dev.set_logging_level(logging.DEBUG)
+        self._lora_dev.set_logging_level(logging.INFO)
 
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
         self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
