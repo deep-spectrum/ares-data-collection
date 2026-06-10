@@ -118,8 +118,8 @@ class AresTransmitter:
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.set_logging_level(logging.DEBUG)
 
-        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
-        self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
+        # self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
+        # self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
 
         self._lora_dev.start_driver()
 
@@ -155,6 +155,6 @@ class AresTransmitter:
     def __del__(self):
         self._lora_dev.stop_driver()
         self._running_node_list_manager = False
-        self._node_manager_future.result()
-        self._tasks.shutdown()
+        # self._node_manager_future.result()
+        # self._tasks.shutdown()
 
