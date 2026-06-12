@@ -56,6 +56,7 @@ class AresReceiver:
                 ready = self._dev_ready.is_set()
                 self._lora_dev.send_heartbeat(ready)
             time.sleep(5.0)
+        print("LoRa heartbeat done")
 
     def _lora_start_cb(self, seconds: int, nanoseconds: int):
         if self._dev_ready.is_set():
@@ -87,6 +88,7 @@ class AresReceiver:
     def stop(self):
         if not self._heartbeat_running:
             raise RuntimeError("already stopped")
+        self._lora_dev.set_logging_level(logging.DEBUG)
         self._heartbeat_running = False
         assert self._lora_heartbeat_future is not None
         self._lora_heartbeat_future.result()
@@ -96,9 +98,9 @@ class AresReceiver:
             self.stop()
         except RuntimeError:
             pass
-        self._tasks.shutdown()
         self._sm_dev.close()
         self._lora_dev.stop_driver()
+        self._tasks.shutdown(cancel_futures=True)
 
 
 @dataclass
