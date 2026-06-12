@@ -95,12 +95,17 @@ class AresReceiver:
 
     def __del__(self):
         try:
+            print("Attempting to stop")
             self.stop()
         except RuntimeError:
             pass
+        print("Closing sm device")
         self._sm_dev.close()
+        print("Stopping lora driver")
         self._lora_dev.stop_driver()
+        print("Shutting down tasks")
         self._tasks.shutdown(cancel_futures=True)
+        print("Done")
 
 
 @dataclass
