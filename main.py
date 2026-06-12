@@ -131,7 +131,7 @@ class AresTransmitter:
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.set_logging_level(logging.INFO)
 
-        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
+        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=1)
         self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
 
         self._lora_dev.start_driver()
