@@ -72,6 +72,7 @@ class AresReceiver:
         with self._heartbeat_lock:
             self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory, start_time=SmStartTime(self._start_time_sec, self._start_time_ns))
             self._dev_ready.clear()
+            self._sm_dev.abort_measurement()
         
         self._start_signal.clear()
 
@@ -153,6 +154,12 @@ class AresTransmitter:
         start_sec, start_usec = ares_iq_ext.add_time(now_sec, now_usec, start_delay_sec, start_delay_usec)
 
         self._lora_dev.start(start_sec, start_usec)
+
+    def start_gps_ts(self, start_second: int):
+        if start_second < 0:
+            raise ValueError("")
+
+        self._lora_dev.start(start_second, 0)
 
     @property
     def nodes(self):
