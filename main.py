@@ -11,6 +11,16 @@ import ares_iq_ext
 from copy import deepcopy
 import sys
 
+
+def _lora_heartbeat(running: threading.Event, lock: threading.Lock, dev_ready_sig: threading.Event, lora_dev: LoraSerial):
+    while running.is_set():
+        with lock:
+            ready = dev_ready_sig.is_set()
+            lora_dev.send_heartbeat(ready, strobe_count=1)
+        time.sleep(5.0)
+    print("Heartbeat done")
+
+
 class AresReceiver:
     def __init__(self, lora_port: str, gps_stamping: bool, model: GpsModel = GpsModel.STATIONARY):
         lora_configs = LoraSerialConfig(
@@ -23,7 +33,7 @@ class AresReceiver:
         self._lora_dev.start_driver()
         self._dev_ready = threading.Event()
         self._heartbeat_lock = threading.Lock()
-        self._heartbeat_running = False
+        self._heartbeat_running = threading.Event()
 
         sm_class = self._get_dev_class()
         self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
@@ -49,14 +59,6 @@ class AresReceiver:
         else:
             raise RuntimeError("SM device not found")
 
-    def _lora_heartbeat(self):
-        while self._heartbeat_running and not sys.is_finalizing():
-            with self._heartbeat_lock:
-                ready = self._dev_ready.is_set()
-                self._lora_dev.send_heartbeat(ready)
-            time.sleep(5.0)
-        print("LoRa heartbeat done")
-
     def _lora_start_cb(self, seconds: int, nanoseconds: int):
         if self._dev_ready.is_set():
             self._start_time_sec = seconds
@@ -80,8 +82,8 @@ class AresReceiver:
     def start(self):
         if self._heartbeat_running:
             raise RuntimeError("Already running")
-        self._heartbeat_running = True
-        self._heartbeat_thread = threading.Thread(target=self._lora_heartbeat)
+        self._heartbeat_running.set()
+        self._heartbeat_thread = threading.Thread(target=_lora_heartbeat, args=[self._heartbeat_running, self._heartbeat_lock, self._dev_ready, self._lora_dev])
         assert isinstance(self._heartbeat_thread, threading.Thread)
         self._heartbeat_thread.start()
 
@@ -89,7 +91,7 @@ class AresReceiver:
         if not self._heartbeat_running:
             raise RuntimeError("already stopped")
         self._lora_dev.set_logging_level(logging.DEBUG)
-        self._heartbeat_running = False
+        self._heartbeat_running.clear()
         assert isinstance(self._heartbeat_thread, threading.Thread)
         self._heartbeat_thread.join(10.0)
         
