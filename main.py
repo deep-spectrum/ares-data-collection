@@ -58,9 +58,10 @@ class AresReceiver:
             time.sleep(5.0)
 
     def _lora_start_cb(self, seconds: int, nanoseconds: int):
-        self._start_time_sec = seconds
-        self._start_time_ns = nanoseconds
-        self._start_signal.set()
+        if self._dev_ready.is_set():
+            self._start_time_sec = seconds
+            self._start_time_ns = nanoseconds
+            self._start_signal.set()
 
     def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path):
         if self._gps_stamping:
