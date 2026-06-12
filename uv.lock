@@ -185,7 +185,7 @@ dev = [{ name = "textual-dev", specifier = ">=1.8.0" }]
 [[package]]
 name = "ares-iq"
 version = "0.0.0"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#42449afeba951903dac36d68a6298e00ee51cb25" }
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#4512f9d9e30d6908859a51308197dedfb3d7960e" }
 dependencies = [
     { name = "ares-iq-extensions" },
     { name = "attrs" },
@@ -202,7 +202,7 @@ dependencies = [
 [[package]]
 name = "ares-iq-extensions"
 version = "0.0.8"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#42449afeba951903dac36d68a6298e00ee51cb25" }
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#4512f9d9e30d6908859a51308197dedfb3d7960e" }
 dependencies = [
     { name = "numpy" },
 ]
@@ -1159,15 +1159,15 @@ wheels = [
 
 [[package]]
 name = "smpclient"
-version = "7.1.0"
+version = "7.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "intelhex" },
     { name = "smp" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/24/7c/307fa48d6d4a93a8b13c7449135b5e03f588dbcd474a318654bd9803fcba/smpclient-7.1.0.tar.gz", hash = "sha256:3aba6fbd520af052c0a983ec995f0a551463c65673f4afbee77f7a6c5081a36c", size = 4174362, upload-time = "2026-05-29T18:50:29.818Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d8/b6/97dfe4c50f56fafcf64302832ef14d6648df47907f2e971362f2c03459e8/smpclient-7.2.0.tar.gz", hash = "sha256:cbd111a61b42fc6ce39454fee0ceec17ba3670eaf6fe126b9fef9764d8e5bb6d", size = 4260002, upload-time = "2026-06-11T20:42:44.311Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b1/62/4ec38366f3606ecf57c83a4193af172480e958f9c194a2e483cd5c2b9d8c/smpclient-7.1.0-py3-none-any.whl", hash = "sha256:2fa28e8994e07151739d2fb9ad8805d10c3eff3c0d82b69768715a9424fe65ed", size = 50690, upload-time = "2026-05-29T18:50:28.123Z" },
+    { url = "https://files.pythonhosted.org/packages/7d/68/9bdab2fbbcfb1c5a4d6a8f0b4355a10632b037c86f7bfe69eff965f54813/smpclient-7.2.0-py3-none-any.whl", hash = "sha256:aabcc974d608555cef3b40142f6deb106fcbacda783e31a604d56d297a330540", size = 51324, upload-time = "2026-06-11T20:42:42.128Z" },
 ]
 
 [[package]]
