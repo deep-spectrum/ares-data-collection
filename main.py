@@ -5,11 +5,11 @@ import threading
 import time
 from datetime import timedelta, datetime
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, Future
 import logging
 from dataclasses import dataclass
 import ares_iq_ext
 from copy import deepcopy
-import atexit
 
 class AresReceiver:
     def __init__(self, lora_port: str, gps_stamping: bool, model: GpsModel = GpsModel.STATIONARY):
@@ -31,8 +31,6 @@ class AresReceiver:
         self._sm_dev.open()
         self._gps_stamping = gps_stamping
 
-        atexit.register(self.cleanup)
-        from concurrent.futures import ThreadPoolExecutor, Future
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
         self._lora_heartbeat_future: Future[None] | None = None
 
@@ -108,7 +106,6 @@ class AresReceiver:
         print("Shutting down tasks")
         self._tasks.shutdown(cancel_futures=True)
         print("Done")
-        atexit.unregister(self.cleanup)
 
     def __del__(self):
         self.cleanup()
@@ -134,7 +131,6 @@ class AresTransmitter:
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.set_logging_level(logging.INFO)
 
-        from concurrent.futures import ThreadPoolExecutor, Future
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=1)
         self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
 
