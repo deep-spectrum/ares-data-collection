@@ -5,7 +5,6 @@ import threading
 import time
 from datetime import timedelta, datetime
 from pathlib import Path
-from concurrent.futures import ThreadPoolExecutor, Future
 import logging
 from dataclasses import dataclass
 import ares_iq_ext
@@ -32,8 +31,7 @@ class AresReceiver:
         self._sm_dev.open()
         self._gps_stamping = gps_stamping
 
-        self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
-        self._lora_heartbeat_future: Future[None] | None = None
+        self._heartbeat_thread: threading.Thread | None = None
 
         self._start_signal = threading.Event()
         self._start_time_sec: int = 0
@@ -83,16 +81,17 @@ class AresReceiver:
         if self._heartbeat_running:
             raise RuntimeError("Already running")
         self._heartbeat_running = True
-        self._lora_heartbeat_future = self._tasks.submit(self._lora_heartbeat)
-        # self._lora_dev.set_logging_level(logging.WARNING)
+        self._heartbeat_thread = threading.Thread(target=self._lora_heartbeat)
+        assert isinstance(self._heartbeat_thread, threading.Thread)
+        self._heartbeat_thread.start()
 
     def stop(self):
         if not self._heartbeat_running:
             raise RuntimeError("already stopped")
         self._lora_dev.set_logging_level(logging.DEBUG)
         self._heartbeat_running = False
-        assert self._lora_heartbeat_future is not None
-        self._lora_heartbeat_future.result()
+        assert isinstance(self._heartbeat_thread, threading.Thread)
+        self._heartbeat_thread.join(10.0)
         
     def cleanup(self):
         try:
@@ -104,9 +103,6 @@ class AresReceiver:
         self._sm_dev.close()
         print("Stopping lora driver")
         self._lora_dev.stop_driver()
-        print("Shutting down tasks")
-        self._tasks.shutdown(cancel_futures=True)
-        print("Done")
 
     def __del__(self):
         self.cleanup()
@@ -132,6 +128,7 @@ class AresTransmitter:
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.set_logging_level(logging.INFO)
 
+        from concurrent.futures import ThreadPoolExecutor, Future
         self._tasks: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=1)
         self._node_manager_future: Future[None] = self._tasks.submit(self._neighbor_manager)
 
