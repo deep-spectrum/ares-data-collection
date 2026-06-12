@@ -92,8 +92,8 @@ class AresReceiver:
         self._heartbeat_running = False
         assert self._lora_heartbeat_future is not None
         self._lora_heartbeat_future.result()
-
-    def __del__(self):
+        
+    def cleanup(self):
         try:
             print("Attempting to stop")
             self.stop()
@@ -106,6 +106,9 @@ class AresReceiver:
         print("Shutting down tasks")
         self._tasks.shutdown(cancel_futures=True)
         print("Done")
+
+    def __del__(self):
+        self.cleanup()
 
 
 @dataclass
