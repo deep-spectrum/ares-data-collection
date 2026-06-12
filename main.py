@@ -10,6 +10,7 @@ import logging
 from dataclasses import dataclass
 import ares_iq_ext
 from copy import deepcopy
+import sys
 
 class AresReceiver:
     def __init__(self, lora_port: str, gps_stamping: bool, model: GpsModel = GpsModel.STATIONARY):
@@ -51,7 +52,7 @@ class AresReceiver:
             raise RuntimeError("SM device not found")
 
     def _lora_heartbeat(self):
-        while self._heartbeat_running:
+        while self._heartbeat_running and not sys.is_finalizing():
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 self._lora_dev.send_heartbeat(ready)
