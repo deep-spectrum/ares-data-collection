@@ -1,4 +1,4 @@
-from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType
+from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType, SmStartTime
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
@@ -9,6 +9,7 @@ from concurrent.futures import ThreadPoolExecutor, Future
 import logging
 from dataclasses import dataclass
 import ares_iq_ext
+from copy import deepcopy
 
 class AresReceiver:
     def __init__(self, lora_port: str, gps_stamping: bool, model: GpsModel = GpsModel.STATIONARY):
@@ -69,7 +70,7 @@ class AresReceiver:
         self._start_signal.wait()
 
         with self._heartbeat_lock:
-            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory, gps_start_time=self._start_time_sec)
+            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory, start_time=SmStartTime(self._start_time_sec, self._start_time_ns))
             self._dev_ready.clear()
         
         self._start_signal.clear()
@@ -153,7 +154,14 @@ class AresTransmitter:
 
         self._lora_dev.start(start_sec, start_usec)
 
+    @property
+    def nodes(self):
+        with self._neighbor_lock:
+            ret = deepcopy(self._nodes)
+        return ret
+
     def __del__(self):
+        self._lora_dev.set_logging_level(logging.DEBUG)
         self._lora_dev.stop_driver()
         self._running_node_list_manager = False
         self._node_manager_future.result()
