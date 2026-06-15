@@ -1,4 +1,5 @@
-from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType, SmStartTime
+from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, \
+    SmDeviceType, SmStartTime
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
@@ -6,12 +7,9 @@ import time
 from datetime import timedelta, datetime
 from pathlib import Path
 import logging
-from dataclasses import dataclass
-import ares_iq_ext
-from copy import deepcopy
 from weakref import WeakSet
 
-
+logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
 
 
@@ -82,7 +80,8 @@ class AresReceiver:
         self._start_signal.wait()
 
         with self._heartbeat_lock:
-            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory, start_time=SmStartTime(self._start_time_sec, self._start_time_usec))
+            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory,
+                                   start_time=SmStartTime(self._start_time_sec, self._start_time_usec))
             self._dev_ready.clear()
             self._sm_dev.abort_measurement()
 
