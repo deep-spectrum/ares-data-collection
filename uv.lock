@@ -174,7 +174,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "ares-iq", git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master" },
-    { name = "ares-lora", git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=del-bug-fix" },
+    { name = "ares-lora", git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=v1.1.2" },
     { name = "textual", specifier = ">=8.2.7" },
     { name = "typer", specifier = ">=0.26.3" },
 ]
@@ -210,7 +210,7 @@ dependencies = [
 [[package]]
 name = "ares-lora"
 version = "1.1.2"
-source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=del-bug-fix#6efde1dc9241fb81a052e4d9a2688c0d6e035043" }
+source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=v1.1.2#a56909174defd19e10a39fefdb2ef4cc30d943e0" }
 dependencies = [
     { name = "ares-lora-core" },
     { name = "pyserial" },
@@ -220,7 +220,7 @@ dependencies = [
 [[package]]
 name = "ares-lora-core"
 version = "1.1.2"
-source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver%2Fcore&rev=del-bug-fix#6efde1dc9241fb81a052e4d9a2688c0d6e035043" }
+source = { git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver%2Fcore&rev=v1.1.2#a56909174defd19e10a39fefdb2ef4cc30d943e0" }
 
 [[package]]
 name = "attrs"
