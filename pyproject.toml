@@ -21,7 +21,7 @@ ares-transmitter = "ares.tui.transmitter:main"
 
 [tool.uv.sources]
 ares-iq = { git = "https://github.com/deep-spectrum/Ares-IQ.git", rev = "master" }
-ares-lora = { git = "https://github.com/deep-spectrum/ares-lora.git", subdirectory = "serial-driver", rev = "v1.1.0" }
+ares-lora = { git = "https://github.com/deep-spectrum/ares-lora.git", subdirectory = "serial-driver", rev = "v1.1.1" }
 
 [dependency-groups]
 dev = [
