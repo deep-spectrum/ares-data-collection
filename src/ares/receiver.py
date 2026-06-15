@@ -1,4 +1,6 @@
 from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType, SmStartTime
+from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
+    LoraSpreadingFactor, LoraBandwidth
 import threading
 import time
 from datetime import timedelta, datetime
@@ -20,11 +22,6 @@ def _shutdown_receivers():
 
 
 threading._register_atexit(_shutdown_receivers)
-
-
-# Need to register our shutdown routine first
-from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
-    LoraSpreadingFactor, LoraBandwidth
 
 
 class AresReceiver:
