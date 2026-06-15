@@ -1,20 +1,18 @@
-from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, SmDeviceType, SmStartTime
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
 import time
 from datetime import timedelta, datetime
-from pathlib import Path
 import logging
 from dataclasses import dataclass
 import ares_iq_ext
 from copy import deepcopy
 from weakref import WeakSet
 
-
 logger = logging.getLogger("ares_transmitter")
 
 _instances = WeakSet()
+
 
 def _shutdown_transmitters():
     global _instances
@@ -27,12 +25,29 @@ threading._register_atexit(_shutdown_transmitters)
 
 @dataclass
 class AresNode:
+    """Node metadata.
+
+    Attributes:
+        ready: Flag indicating if the node is ready to collect data.
+        last_update: Last datetime recorded since the last update.
+    """
     ready: bool
     last_update: datetime
 
 
 class AresTransmitter:
+    """
+    Ares EW Data collection system transmitter abstraction.
+    """
+
     def __init__(self, lora_port: str, gps_timestamping: bool, node_timeout: timedelta):
+        """Initialize the AresTransmitter instance.
+
+        Args:
+            lora_port: The serial port ares lora is on.
+            gps_timestamping: Use GPS timestamping for the timebase.
+            node_timeout: The amount of time allowed to elapse before removing a node from the list.
+        """
         self._nodes: dict[int, AresNode] = {}
         self._gps_timestamping = gps_timestamping
         self._neighbors_lock = threading.Lock()
@@ -72,6 +87,12 @@ class AresTransmitter:
             time.sleep(2.0)
 
     def start(self, start_delay_sec: int, start_delay_usec: int = 0):
+        """Start IQ measurements after a specified delay.
+
+        Args:
+            start_delay_sec: The amount of seconds to add to the start time.
+            start_delay_usec: The amount of microseconds to add to the start time. Ignored if GPS timestamping is enabled.
+        """
         if start_delay_sec < 0 or start_delay_usec < 0:
             raise ValueError("start delay values cannot be negative")
 
@@ -84,6 +105,7 @@ class AresTransmitter:
 
     @property
     def nodes(self):
+        """The nodes emitting heartbeats."""
         with self._neighbors_lock:
             ret = deepcopy(self._nodes)
         return ret
