@@ -101,14 +101,15 @@ class AresReceiver:
 
     def _stop(self):
         self._heartbeat_running.clear()
-        if self._heartbeat_thread is not None:
-            self._heartbeat_thread.join(20.0)
-            self._heartbeat_thread = None
 
     def stop(self):
         if not self._heartbeat_running.is_set():
             raise RuntimeError("Already stopped")
         self._stop()
+
+        if self._heartbeat_thread is not None:
+            self._heartbeat_thread.join(20.0)
+            self._heartbeat_thread = None
 
         global _instances
         if self in _instances:
