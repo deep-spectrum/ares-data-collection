@@ -79,10 +79,11 @@ class AresReceiver:
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
 
-    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path):
+    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path, silent: bool = True):
         """Wait for the start signal for collecting data and collect data.
 
         Args:
+            silent:
             center: The center frequency.
             bw: The bandwidth.
             duration: The capture duration of the data.
@@ -97,7 +98,7 @@ class AresReceiver:
         with self._heartbeat_lock:
             self._start_signal.clear()
             self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory,
-                                   start_time=SmStartTime(self._start_time_sec, self._start_time_usec))
+                                   start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
             self._dev_ready.clear()
             self._sm_dev.abort_measurement()
 
