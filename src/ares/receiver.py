@@ -74,7 +74,7 @@ class AresReceiver:
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
-            time.sleep(5.0)
+            time.sleep(10.0)
 
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
