@@ -8,6 +8,7 @@ from datetime import timedelta
 from pathlib import Path
 import logging
 from weakref import WeakSet
+import random
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -73,8 +74,12 @@ class AresReceiver:
         while self._heartbeat_running.is_set():
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
-                self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
-            time.sleep(10.0)
+                try:
+                    self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
+                except TimeoutError:
+                    print("Timeout error occurred")
+            sleep_time = random.uniform(10.0, 20.0)
+            time.sleep(sleep_time)
 
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
