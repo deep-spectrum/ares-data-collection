@@ -24,7 +24,7 @@ threading._register_atexit(_shutdown_receivers)
 
 
 class AresReceiver:
-    def __init__(self, lora_port: str, gps_timestamping: bool, model: GpsModel = GpsModel.PORTABLE):
+    def __init__(self, lora_port: str, gps_timestamping: bool, model: GpsModel = GpsModel.PORTABLE, heartbeat_lower: float = 30, heartbeat_upper: float = 60):
         """Initialize the AresReceiver instance.
 
         Args:
@@ -37,6 +37,12 @@ class AresReceiver:
             start_callback=self._lora_start_cb,
             claim_callback=self._lora_claim_event
         )
+
+        if heartbeat_lower >= heartbeat_upper:
+            raise AttributeError("Lower bound must be smaller than upper bound")
+
+        self._heartbeat_lower = heartbeat_lower
+        self._heartbeat_upper = heartbeat_upper
 
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.start_driver()
@@ -72,14 +78,14 @@ class AresReceiver:
 
     def _lora_heartbeat(self):
         while self._heartbeat_running.is_set():
+            sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
+            time.sleep(sleep_time)
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 try:
                     self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
                 except TimeoutError:
                     print("Timeout error occurred")
-            sleep_time = random.uniform(10.0, 20.0)
-            time.sleep(sleep_time)
 
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
