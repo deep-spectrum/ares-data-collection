@@ -65,10 +65,11 @@ class AresReceiver:
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
         devices = sm_get_device_list(usb=False, max_network_devices=1)
-        if devices[0].type == SmDeviceType.SM200C:
-            return SM200C
-        if devices[0].type == SmDeviceType.SM435C:
-            return SM435C
+        if devices:
+            if devices[0].type == SmDeviceType.SM200C:
+                return SM200C
+            if devices[0].type == SmDeviceType.SM435C:
+                return SM435C
         raise OSError("No SM device found")
 
     def _lora_start_cb(self, seconds: int, microseconds: int):
@@ -79,16 +80,16 @@ class AresReceiver:
 
     def _lora_heartbeat(self):
         sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
-        print(f"Waiting {sleep_time} seconds")
+        logger.debug(f"Sleeping for {sleep_time} seconds")
         while not self._heartbeat_not_running.wait(sleep_time):
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 try:
                     self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
                 except TimeoutError:
-                    print("Timeout error occurred")
+                    logger.error("Timeout error occurred")
             sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
-            print(f"Waiting {sleep_time} seconds")
+            logger.debug(f"Sleeping for {sleep_time} seconds")
 
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1

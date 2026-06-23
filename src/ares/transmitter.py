@@ -53,8 +53,7 @@ class AresTransmitter:
         self._neighbors_lock = threading.Lock()
 
         self._timeout = node_timeout
-        self._node_manager_running = threading.Event()
-        self._node_manager_running.set()
+        self._node_manager_not_running = threading.Event()
 
         lora_configs = LoraSerialConfig(port=lora_port, master=True, heartbeat_callback=self._heartbeat_callback)
         self._lora_dev = LoraSerial(lora_configs)
@@ -74,7 +73,7 @@ class AresTransmitter:
             self._nodes[node_id] = AresNode(ready, datetime.now())
 
     def _neighbor_manager_handle(self):
-        while self._node_manager_running.is_set():
+        while not self._node_manager_not_running.wait(2.0):
             nodes_to_remove = []
             with self._neighbors_lock:
                 for node_id, meta in self._nodes.items():
@@ -84,7 +83,6 @@ class AresTransmitter:
                 for node_id in nodes_to_remove:
                     logger.debug(f"Removing {node_id} from list")
                     del self._nodes[node_id]
-            time.sleep(2.0)
 
     def start(self, start_delay_sec: int, start_delay_usec: int = 0):
         """Start IQ measurements after a specified delay.
@@ -111,7 +109,7 @@ class AresTransmitter:
         return ret
 
     def _shutdown_manager_thread(self):
-        self._node_manager_running.clear()
+        self._node_manager_not_running.set()
         if self._neighbor_manager is not None:
             self._neighbor_manager.join(10.0)
             self._neighbor_manager = None
