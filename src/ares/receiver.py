@@ -48,7 +48,8 @@ class AresReceiver:
         self._lora_dev.start_driver()
         self._dev_ready = threading.Event()
         self._heartbeat_lock = threading.Lock()
-        self._heartbeat_running = threading.Event()
+        self._heartbeat_not_running = threading.Event()
+        self._heartbeat_not_running.set()
         self._heartbeat_thread: threading.Thread | None = None
         self._heartbeat_strobe_cnt = 3
 
@@ -60,8 +61,6 @@ class AresReceiver:
         self._start_signal = threading.Event()
         self._start_time_sec: int = 0
         self._start_time_usec: int = 0
-
-        self._sleep_cv = threading.Event()
 
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
@@ -81,7 +80,7 @@ class AresReceiver:
     def _lora_heartbeat(self):
         sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
         print(f"Waiting {sleep_time} seconds")
-        while not self._heartbeat_running.wait(sleep_time):
+        while not self._heartbeat_not_running.wait(sleep_time):
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 try:
@@ -118,9 +117,9 @@ class AresReceiver:
 
     def start(self):
         """Start the receiver background tasks and make the node visible to the world."""
-        if not self._heartbeat_running.is_set():
+        if not self._heartbeat_not_running.is_set():
             raise RuntimeError("Already running")
-        self._heartbeat_running.clear()
+        self._heartbeat_not_running.clear()
         self._heartbeat_thread = threading.Thread(target=self._lora_heartbeat)
         assert isinstance(self._heartbeat_thread, threading.Thread)
         self._heartbeat_thread.start()
@@ -129,11 +128,11 @@ class AresReceiver:
         _instances.add(self)
 
     def _stop(self):
-        self._heartbeat_running.set()
+        self._heartbeat_not_running.set()
 
     def stop(self):
         """Stop the receiver background tasks."""
-        if self._heartbeat_running.is_set():
+        if self._heartbeat_not_running.is_set():
             raise RuntimeError("Already stopped")
         self._stop()
 
