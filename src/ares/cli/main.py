@@ -1,12 +1,11 @@
 from .collect import app as collect_app
+from .configure import app as configure_app
 import typer
 
 
 app = typer.Typer()
 app.add_typer(collect_app)
-
-
-# TODO: Some config commands
+app.add_typer(configure_app)
 
 
 def main():
