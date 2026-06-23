@@ -61,6 +61,8 @@ class AresReceiver:
         self._start_time_sec: int = 0
         self._start_time_usec: int = 0
 
+        self._sleep_cv = threading.Condition()
+
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
         devices = sm_get_device_list(usb=False, max_network_devices=1)
@@ -76,10 +78,13 @@ class AresReceiver:
             self._start_time_usec = microseconds
             self._start_signal.set()
 
+    def _sleep_thread(self):
+        sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
+        self._sleep_cv.wait(sleep_time)
+
     def _lora_heartbeat(self):
         while self._heartbeat_running.is_set():
-            sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
-            time.sleep(sleep_time)
+            self._sleep_thread()
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 try:
@@ -126,6 +131,7 @@ class AresReceiver:
 
     def _stop(self):
         self._heartbeat_running.clear()
+        self._sleep_cv.notify()
 
     def stop(self):
         """Stop the receiver background tasks."""
