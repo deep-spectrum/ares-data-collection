@@ -18,6 +18,7 @@ dependencies = [
 [project.scripts]
 ares-receiver = "ares.tui.receiver:main"
 ares-transmitter = "ares.tui.transmitter:main"
+ares = "ares.cli.main:main"
 
 [tool.uv.sources]
 ares-iq = { git = "https://github.com/deep-spectrum/Ares-IQ.git", rev = "master" }
