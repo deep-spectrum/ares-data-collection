@@ -3,7 +3,6 @@ from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_dev
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
-import time
 from datetime import timedelta
 from pathlib import Path
 import logging
