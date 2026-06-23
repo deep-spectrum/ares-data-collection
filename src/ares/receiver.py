@@ -61,7 +61,7 @@ class AresReceiver:
         self._start_time_sec: int = 0
         self._start_time_usec: int = 0
 
-        self._sleep_cv = threading.Condition()
+        self._sleep_cv = threading.Event()
 
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
@@ -78,19 +78,18 @@ class AresReceiver:
             self._start_time_usec = microseconds
             self._start_signal.set()
 
-    def _sleep_thread(self):
-        sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
-        self._sleep_cv.wait(sleep_time)
-
     def _lora_heartbeat(self):
-        while self._heartbeat_running.is_set():
-            self._sleep_thread()
+        sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
+        print(f"Waiting {sleep_time} seconds")
+        while not self._heartbeat_running.wait(sleep_time):
             with self._heartbeat_lock:
                 ready = self._dev_ready.is_set()
                 try:
                     self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
                 except TimeoutError:
                     print("Timeout error occurred")
+            sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
+            print(f"Waiting {sleep_time} seconds")
 
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
@@ -119,9 +118,9 @@ class AresReceiver:
 
     def start(self):
         """Start the receiver background tasks and make the node visible to the world."""
-        if self._heartbeat_running.is_set():
+        if not self._heartbeat_running.is_set():
             raise RuntimeError("Already running")
-        self._heartbeat_running.set()
+        self._heartbeat_running.clear()
         self._heartbeat_thread = threading.Thread(target=self._lora_heartbeat)
         assert isinstance(self._heartbeat_thread, threading.Thread)
         self._heartbeat_thread.start()
@@ -130,12 +129,11 @@ class AresReceiver:
         _instances.add(self)
 
     def _stop(self):
-        self._heartbeat_running.clear()
-        self._sleep_cv.notify()
+        self._heartbeat_running.set()
 
     def stop(self):
         """Stop the receiver background tasks."""
-        if not self._heartbeat_running.is_set():
+        if self._heartbeat_running.is_set():
             raise RuntimeError("Already stopped")
         self._stop()
 
