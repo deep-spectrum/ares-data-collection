@@ -42,6 +42,8 @@ def collect(
     save_path.mkdir()
 
     try:
+        print(f"Saving to {save_path}")
+        print("Waiting for start signal")
         rx.capture_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet)
     except KeyboardInterrupt:
         rx.stop()
