@@ -1,7 +1,7 @@
 from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, \
     SmDeviceType, SmStartTime
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
-    LoraSpreadingFactor, LoraBandwidth
+    LoraSpreadingFactor, LoraBandwidth, SettingId
 import threading
 from datetime import timedelta
 from pathlib import Path
@@ -93,7 +93,8 @@ class AresReceiver:
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
 
-    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path, silent: bool = True):
+    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+                     silent: bool = True, chunk_size: int = int(4e9)):
         """Wait for the start signal for collecting data and collect data.
 
         Args:
@@ -110,7 +111,7 @@ class AresReceiver:
 
         with self._heartbeat_lock:
             self._start_signal.clear()
-            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory,
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory,
                                    start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
             self._dev_ready.clear()
             self._sm_dev.abort_measurement()
@@ -151,6 +152,15 @@ class AresReceiver:
             self._lora_dev.stop_driver()
         except RuntimeError:
             pass
+
+    @property
+    def node_id(self):
+        ret = self._lora_dev.setting(SettingId.ID)
+        if ret is None:
+            raise RuntimeError("Setting return value is `None`")
+        if ret == 0:
+            raise ValueError("ID setting not valid")
+        return ret - 1
 
     def __del__(self):
         self._cleanup()
