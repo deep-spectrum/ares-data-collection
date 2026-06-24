@@ -4,6 +4,12 @@ from ares.receiver import AresReceiver
 from datetime import timedelta, datetime
 from .configure import get_setting, Configuration
 from pathlib import Path
+from ares_iq_ext import datetime_from_timeval
+
+
+def _start_notification(second: int, microsecond: int):
+    dt: datetime = datetime_from_timeval(second, microsecond)
+    print(f"Starting measurement at {dt.strftime('%I:%M:%S %p')}")
 
 
 def collect(
@@ -27,7 +33,7 @@ def collect(
         quiet: Run in quiet mode.
     """
 
-    rx = AresReceiver(str(lora_port), gps_ts)
+    rx = AresReceiver(str(lora_port), gps_ts, start_notif_cb=_start_notification)
     rx.start()
     rx_id = rx.node_id
 

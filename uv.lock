@@ -163,6 +163,7 @@ dependencies = [
     { name = "ares-iq" },
     { name = "ares-lora" },
     { name = "textual" },
+    { name = "typing-extensions" },
     { name = "tyro" },
 ]
 
@@ -176,6 +177,7 @@ requires-dist = [
     { name = "ares-iq", git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master" },
     { name = "ares-lora", git = "https://github.com/deep-spectrum/ares-lora.git?subdirectory=serial-driver&rev=v1.1.2" },
     { name = "textual", specifier = ">=8.2.7" },
+    { name = "typing-extensions", specifier = ">=4.15.0" },
     { name = "tyro", specifier = ">=1.0.15" },
 ]
 
@@ -185,7 +187,7 @@ dev = [{ name = "textual-dev", specifier = ">=1.8.0" }]
 [[package]]
 name = "ares-iq"
 version = "0.0.0"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#7e8d85d8828f7e6b18d5e408e91819b1832ae3d9" }
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?rev=master#0584b734450d9171e88136f54b554a7be5b5fc6d" }
 dependencies = [
     { name = "ares-iq-extensions" },
     { name = "attrs" },
@@ -201,8 +203,8 @@ dependencies = [
 
 [[package]]
 name = "ares-iq-extensions"
-version = "0.0.10"
-source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#7e8d85d8828f7e6b18d5e408e91819b1832ae3d9" }
+version = "0.0.11"
+source = { git = "https://github.com/deep-spectrum/Ares-IQ.git?subdirectory=ares-iq-extensions&rev=master#0584b734450d9171e88136f54b554a7be5b5fc6d" }
 dependencies = [
     { name = "numpy" },
 ]

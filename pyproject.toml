@@ -12,6 +12,7 @@ dependencies = [
     "ares-iq",
     "ares-lora",
     "textual>=8.2.7",
+    "typing-extensions>=4.15.0",
     "tyro>=1.0.15",
 ]
 

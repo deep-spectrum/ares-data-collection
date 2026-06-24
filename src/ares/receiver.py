@@ -8,6 +8,7 @@ from pathlib import Path
 import logging
 from weakref import WeakSet
 import random
+from typing import Callable
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -23,7 +24,13 @@ threading._register_atexit(_shutdown_receivers)
 
 
 class AresReceiver:
-    def __init__(self, lora_port: str, gps_timestamping: bool, model: GpsModel = GpsModel.PORTABLE, heartbeat_lower: float = 30, heartbeat_upper: float = 60):
+    def __init__(self,
+                 lora_port: str,
+                 gps_timestamping: bool,
+                 model: GpsModel = GpsModel.PORTABLE,
+                 heartbeat_lower: float = 30,
+                 heartbeat_upper: float = 60,
+                 start_notif_cb: Callable[[int, int], None] | None = None):
         """Initialize the AresReceiver instance.
 
         Args:
@@ -60,6 +67,8 @@ class AresReceiver:
         self._start_signal = threading.Event()
         self._start_time_sec: int = 0
         self._start_time_usec: int = 0
+
+        self._start_notif: Callable[[int, int], None] | None = start_notif_cb
 
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
@@ -108,6 +117,9 @@ class AresReceiver:
         self._dev_ready.set()
 
         self._start_signal.wait()
+
+        if self._start_notif is not None:
+            self._start_notif(self._start_time_sec, self._start_time_usec)
 
         with self._heartbeat_lock:
             self._start_signal.clear()
