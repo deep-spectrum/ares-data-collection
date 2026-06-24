@@ -3,7 +3,6 @@ import enum
 import yaml
 from pathlib import Path
 from typing import Any
-from typing_extensions import Annotated
 
 
 CLI_CACHE_DIR = Path.home() / ".ares"
@@ -15,6 +14,13 @@ class Configuration(enum.Enum):
 
 
 def configure(key: tyro.conf.EnumChoicesFromValues[Configuration], value: str | None = None, /):
+    """
+    Set and read global configurations.
+
+    Args:
+        key: The configuration key.
+        value: The new configured value. If not specified or set to `None`, then this will read the current configuration value.
+    """
     if CONFIG_FILE.exists():
         with open(CONFIG_FILE, "r") as f:
             configs = yaml.safe_load(f)

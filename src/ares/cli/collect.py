@@ -16,9 +16,7 @@ def collect(
         quiet: Annotated[bool, tyro.conf.FlagCreatePairsOff, tyro.conf.arg(aliases=["-q"])] = False
 ):
     """
-    Start data collection on an Ares receiver node.
-
-    This will wait for the start signal from the transmitter.
+    Start data collection on an Ares receiver node. This will wait for the start signal from the transmitter.
 
     Args:
         lora_port: The port the LoRa modem is connected to.
