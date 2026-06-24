@@ -1,13 +1,13 @@
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth
 import threading
-import time
 from datetime import timedelta, datetime
 import logging
 from dataclasses import dataclass
 import ares_iq_ext
 from copy import deepcopy
 from weakref import WeakSet
+from typing import Callable
 
 logger = logging.getLogger("ares_transmitter")
 
@@ -40,7 +40,8 @@ class AresTransmitter:
     Ares EW Data collection system transmitter abstraction.
     """
 
-    def __init__(self, lora_port: str, gps_timestamping: bool, node_timeout: timedelta):
+    def __init__(self, lora_port: str, gps_timestamping: bool, node_timeout: timedelta,
+                 start_notif_cb: Callable[[int, int], None] | None = None):
         """Initialize the AresTransmitter instance.
 
         Args:
@@ -62,6 +63,8 @@ class AresTransmitter:
         self._neighbor_manager.start()
 
         self._lora_dev.start_driver()
+
+        self._start_notif_cb = start_notif_cb
 
         global _instances
         _instances.add(self)
@@ -100,6 +103,9 @@ class AresTransmitter:
             start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
 
         self._lora_dev.start(start_sec, start_usec)
+
+        if self._start_notif_cb is not None:
+            self._start_notif_cb(start_sec, start_usec)
 
     @property
     def nodes(self):

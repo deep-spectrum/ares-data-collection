@@ -1,13 +1,14 @@
 from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, \
     SmDeviceType, SmStartTime
 from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
-    LoraSpreadingFactor, LoraBandwidth
+    LoraSpreadingFactor, LoraBandwidth, SettingId
 import threading
 from datetime import timedelta
 from pathlib import Path
 import logging
 from weakref import WeakSet
 import random
+from typing import Callable
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -23,7 +24,13 @@ threading._register_atexit(_shutdown_receivers)
 
 
 class AresReceiver:
-    def __init__(self, lora_port: str, gps_timestamping: bool, model: GpsModel = GpsModel.PORTABLE, heartbeat_lower: float = 30, heartbeat_upper: float = 60):
+    def __init__(self,
+                 lora_port: str,
+                 gps_timestamping: bool,
+                 model: GpsModel = GpsModel.PORTABLE,
+                 heartbeat_lower: float = 30,
+                 heartbeat_upper: float = 60,
+                 start_notif_cb: Callable[[int, int], None] | None = None):
         """Initialize the AresReceiver instance.
 
         Args:
@@ -61,6 +68,8 @@ class AresReceiver:
         self._start_time_sec: int = 0
         self._start_time_usec: int = 0
 
+        self._start_notif: Callable[[int, int], None] | None = start_notif_cb
+
     @staticmethod
     def _get_dev_class() -> type[SM200C | SM435C]:
         devices = sm_get_device_list(usb=False, max_network_devices=1)
@@ -93,7 +102,8 @@ class AresReceiver:
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
 
-    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path, silent: bool = True):
+    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+                     silent: bool = True, chunk_size: int = int(4e9), now: bool = False):
         """Wait for the start signal for collecting data and collect data.
 
         Args:
@@ -104,13 +114,22 @@ class AresReceiver:
         """
         if self._gps_timestamping:
             self._sm_dev.enable_gps_timestamping(True)
+
+        if now:
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent)
+            self._sm_dev.abort_measurement()
+            return
+
         self._dev_ready.set()
 
         self._start_signal.wait()
 
+        if self._start_notif is not None:
+            self._start_notif(self._start_time_sec, self._start_time_usec)
+
         with self._heartbeat_lock:
             self._start_signal.clear()
-            self._sm_dev.stream_iq(center, bw, int(4e9), duration, save_directory,
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory,
                                    start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
             self._dev_ready.clear()
             self._sm_dev.abort_measurement()
@@ -151,6 +170,15 @@ class AresReceiver:
             self._lora_dev.stop_driver()
         except RuntimeError:
             pass
+
+    @property
+    def node_id(self):
+        ret = self._lora_dev.setting(SettingId.ID)
+        if ret is None:
+            raise RuntimeError("Setting return value is `None`")
+        if ret == 0:
+            raise ValueError("ID setting not valid")
+        return ret - 1
 
     def __del__(self):
         self._cleanup()

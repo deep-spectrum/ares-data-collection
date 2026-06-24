@@ -12,12 +12,14 @@ dependencies = [
     "ares-iq",
     "ares-lora",
     "textual>=8.2.7",
-    "typer>=0.26.3",
+    "typing-extensions>=4.15.0",
+    "tyro>=1.0.15",
 ]
 
 [project.scripts]
 ares-receiver = "ares.tui.receiver:main"
 ares-transmitter = "ares.tui.transmitter:main"
+ares = "ares.cli.main:main"
 
 [tool.uv.sources]
 ares-iq = { git = "https://github.com/deep-spectrum/Ares-IQ.git", rev = "master" }
