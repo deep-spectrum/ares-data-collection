@@ -19,7 +19,8 @@ def collect(
         duration: float,
         /,
         gps_ts: Annotated[bool, tyro.conf.FlagCreatePairsOff, tyro.conf.arg(aliases=["-g"])] = False,
-        quiet: Annotated[bool, tyro.conf.FlagCreatePairsOff, tyro.conf.arg(aliases=["-q"])] = False
+        quiet: Annotated[bool, tyro.conf.FlagCreatePairsOff, tyro.conf.arg(aliases=["-q"])] = False,
+        now: Annotated[bool, tyro.conf.FlagCreatePairsOff] = False
 ):
     """
     Start data collection on an Ares receiver node. This will wait for the start signal from the transmitter.
@@ -31,6 +32,7 @@ def collect(
         duration: The duration of the capture in seconds.
         gps_ts: Use GPS timestamping.
         quiet: Run in quiet mode.
+        now: Start measurement now.
     """
 
     rx = AresReceiver(str(lora_port), gps_ts, start_notif_cb=_start_notification)
@@ -42,8 +44,8 @@ def collect(
         print(f"{save_path} does not exist.")
         exit(1)
 
-    now = datetime.now()
-    date_string = now.strftime("%Y-%m-%d-%H-%M-%S")
+    now_ = datetime.now()
+    date_string = now_.strftime("%Y-%m-%d-%H-%M-%S")
     save_path = save_path / date_string
     save_path.mkdir()
 
@@ -53,7 +55,7 @@ def collect(
     try:
         print(f"Saving to {save_path}")
         print("Waiting for start signal")
-        rx.capture_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet)
+        rx.capture_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
     except KeyboardInterrupt:
         rx.stop()
         print("No data captured")

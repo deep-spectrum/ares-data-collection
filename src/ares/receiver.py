@@ -103,7 +103,7 @@ class AresReceiver:
         self._heartbeat_strobe_cnt = 1
 
     def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
-                     silent: bool = True, chunk_size: int = int(4e9)):
+                     silent: bool = True, chunk_size: int = int(4e9), now: bool = False):
         """Wait for the start signal for collecting data and collect data.
 
         Args:
@@ -114,6 +114,12 @@ class AresReceiver:
         """
         if self._gps_timestamping:
             self._sm_dev.enable_gps_timestamping(True)
+
+        if now:
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent)
+            self._sm_dev.abort_measurement()
+            return
+
         self._dev_ready.set()
 
         self._start_signal.wait()
