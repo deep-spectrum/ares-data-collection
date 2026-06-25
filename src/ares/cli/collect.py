@@ -36,7 +36,6 @@ def collect(
     """
 
     rx = AresReceiver(str(lora_port), gps_ts, start_notif_cb=_start_notification)
-    rx.start()
     rx_id = rx.node_id
 
     save_path = Path(get_setting(Configuration.SAVE_LOCATION))
@@ -57,5 +56,4 @@ def collect(
         print("Waiting for start signal")
         rx.capture_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
     except KeyboardInterrupt:
-        rx.stop()
         print("No data captured")

@@ -134,7 +134,7 @@ class AresReceiver:
             self._dev_ready.clear()
             self._sm_dev.abort_measurement()
 
-    def start(self):
+    def start_heartbeats(self):
         """Start the receiver background tasks and make the node visible to the world."""
         if not self._heartbeat_not_running.is_set():
             raise RuntimeError("Already running")
@@ -149,7 +149,7 @@ class AresReceiver:
     def _stop(self):
         self._heartbeat_not_running.set()
 
-    def stop(self):
+    def stop_heartbeats(self):
         """Stop the receiver background tasks."""
         if self._heartbeat_not_running.is_set():
             raise RuntimeError("Already stopped")
