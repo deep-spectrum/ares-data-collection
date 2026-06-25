@@ -5,6 +5,7 @@ from datetime import timedelta, datetime
 from .configure import get_setting, Configuration
 from pathlib import Path
 from ares_iq_ext import datetime_from_timeval
+import shutil
 
 
 def _start_notification(second: int, microsecond: int):
@@ -45,10 +46,10 @@ def collect(
 
     now_ = datetime.now()
     date_string = now_.strftime("%Y-%m-%d-%H-%M-%S")
-    save_path = save_path / date_string
-    save_path.mkdir()
+    unique_save_path = save_path / f"{center / 1e6}MHz-{date_string}"
+    unique_save_path.mkdir()
 
-    save_path = save_path / f"rx{rx_id}"
+    save_path = unique_save_path / f"rx{rx_id}"
     save_path.mkdir()
 
     try:
@@ -57,3 +58,4 @@ def collect(
         rx.capture_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
     except KeyboardInterrupt:
         print("No data captured")
+        shutil.rmtree(unique_save_path)
