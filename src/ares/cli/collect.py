@@ -46,7 +46,7 @@ def collect(
 
     now_ = datetime.now()
     date_string = now_.strftime("%Y-%m-%d-%H-%M-%S")
-    unique_save_path = save_path / date_string
+    unique_save_path = save_path / f"{center / 1e6}MHz-{date_string}"
     unique_save_path.mkdir()
 
     save_path = unique_save_path / f"rx{rx_id}"
