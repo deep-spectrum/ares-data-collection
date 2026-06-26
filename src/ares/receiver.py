@@ -204,5 +204,9 @@ class AresReceiver:
     def sample_rate(self):
         return self._sm_dev.sample_rate
 
+    @property
+    def ref_level(self):
+        return self._sm_dev.ref_level
+
     def __del__(self):
         self._cleanup()

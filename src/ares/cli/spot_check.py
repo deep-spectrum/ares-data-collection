@@ -24,6 +24,21 @@ def spot_check(
         colormap: Literal["jet"] = "jet",
         save_loc: Path | None = None,
 ):
+    """Generate a spectrogram from live capture data.
+
+    Args:
+        lora_port: The lora port.
+        center: The center frequency in Hz.
+        bandwidth: The capture bandwidth in Hz.
+        capture_size: The amount of bytes to capture.
+        dpi: The image quality.
+        nfft: Number of FFTs.
+        window: The window to use.
+        show: Show the image (GUI is needed).
+        max_rows: Maximum amount of rows.
+        colormap: The color map to use.
+        save_loc: The save location of the generated image.
+    """
 
     window_enum = {
         "hanning": Window.HANNING,
@@ -48,7 +63,7 @@ def spot_check(
             file,
             center,
             bandwidth,
-            -20,
+            rx.ref_level,
             rx.sample_rate,
 
             nfft=nfft,
@@ -64,3 +79,6 @@ def spot_check(
 
         if save_loc is not None:
             shutil.copy(file, save_loc)
+        else:
+            pass
+            # TODO: Enable BLE and push image over BLE
