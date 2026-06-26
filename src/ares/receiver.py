@@ -134,6 +134,26 @@ class AresReceiver:
             self._dev_ready.clear()
             self._sm_dev.abort_measurement()
 
+    def capture_live_data(self, center: float, bw: float, capture_size: int = int(4e9), silent: bool = False, verbose: bool = False):
+        """Capture an I/Q data live shot with a specified capture size.
+
+        Args:
+            center: The center frequency of the capture.
+            bw: The bandwidth of the capture.
+            capture_size: The amount of bytes to capture.
+            silent: Do not show progress bar.
+            verbose: Show logging messages.
+
+        Returns:
+            The captured IQ data
+        """
+
+        if self._gps_timestamping:
+            self._sm_dev.enable_gps_timestamping(True)
+
+        iq, _, _ = self._sm_dev.capture_iq(center, bw, capture_size, silent, verbose)
+        return iq
+
     def start_heartbeats(self):
         """Start the receiver background tasks and make the node visible to the world."""
         if not self._heartbeat_not_running.is_set():
