@@ -39,6 +39,9 @@ def spot_check(
     iq_data = np.vstack([iq_.iq for iq_ in iq])
     ts_data = np.array([iq_.ts.timestamp() for iq_ in iq])
 
+    print(iq_data)
+    print(ts_data)
+
     # with TemporaryDirectory() as temp:
     #     name = f"capture {now.strftime('%Y-%m-%d-%H%M%S')}"
     #
