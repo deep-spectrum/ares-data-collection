@@ -55,7 +55,7 @@ def collect(
     try:
         print(f"Saving to {save_path}")
         print("Waiting for start signal")
-        rx.capture_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
+        rx.stream_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
     except KeyboardInterrupt:
         print("No data captured")
         shutil.rmtree(unique_save_path)

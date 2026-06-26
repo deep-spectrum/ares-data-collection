@@ -102,7 +102,7 @@ class AresReceiver:
     def _lora_claim_event(self, host_id: int):
         self._heartbeat_strobe_cnt = 1
 
-    def capture_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+    def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
                      silent: bool = True, chunk_size: int = int(4e9), now: bool = False):
         """Wait for the start signal for collecting data and collect data.
 
