@@ -200,5 +200,9 @@ class AresReceiver:
             raise ValueError("ID setting not valid")
         return ret - 1
 
+    @property
+    def sample_rate(self):
+        return self._sm_dev.sample_rate
+
     def __del__(self):
         self._cleanup()
