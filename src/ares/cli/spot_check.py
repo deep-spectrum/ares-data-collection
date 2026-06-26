@@ -41,7 +41,7 @@ def spot_check(
     ts_data = np.array([iq_.ts.timestamp() for iq_ in iq], dtype=np.float64)
 
     with TemporaryDirectory() as temp:
-        name = f"capture {now.strftime('%Y-%m-%d-%H%M%S')}"
+        name = f"capture {now.strftime('%Y-%m-%d-%H%M%S')}.png"
         file = Path(temp) / name
 
         params = SpectrogramParameters(
@@ -59,8 +59,6 @@ def spot_check(
             show=show,
             dpi=dpi,
         )
-
-
 
         generate_spectrogram(iq_data, ts_data, params)
 
