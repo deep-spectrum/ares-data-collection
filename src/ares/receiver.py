@@ -209,7 +209,6 @@ class AresReceiverPolling:
         self._self_ready = threading.Event()
         node_id = self._lora_dev.setting(SettingId.ID)
         assert isinstance(node_id, int)
-        # Decrement this by one
         self._node_id: int = node_id - 1
         self._poll_cb = poll_cb
 
@@ -242,8 +241,8 @@ class AresReceiverPolling:
 
     def _call_user_poll_cb(self):
         if self._poll_cb is not None:
-            param: dict[int, bool] = {self._node_id: self._self_ready.is_set()}
-            param.update(self._poll_ids)
+            param: dict[int, bool] = {node_id - 1: node_ready for node_id, node_ready in self._poll_ids}
+            param[self._node_id] = self._self_ready.is_set()
             self._poll_cb(param)
 
     def _poll_thread_handler(self):

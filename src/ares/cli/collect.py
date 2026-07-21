@@ -20,7 +20,7 @@ def _poll_results(nodes: dict[int, bool]):
     print(f"--- Poll {num_poll_calls} ---")
     num_poll_calls += 1
     for node, ready in nodes.items():
-        print(f"Ares {node - 1}: {'ready' if ready else 'not ready'}")
+        print(f"Ares {node}: {'ready' if ready else 'not ready'}")
 
 
 def collect(
