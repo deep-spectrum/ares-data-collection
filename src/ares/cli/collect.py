@@ -78,5 +78,3 @@ def collect(
     except KeyboardInterrupt:
         print("No data captured")
         shutil.rmtree(unique_save_path)
-        if isinstance(rx, AresReceiverPolling):
-            rx.stop()

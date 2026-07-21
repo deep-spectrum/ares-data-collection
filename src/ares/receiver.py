@@ -184,7 +184,8 @@ class AresReceiverPolling:
         self._gps_timestamping = gps_timestamping
 
         self._poll_period = poll_period
-        self._poll_ids: dict[int, bool] = {poll_id: False for poll_id in valid_node_ids}
+        # Make things make sense. Since 0 is invalid for a node ID, things are incremented by 1
+        self._poll_ids: dict[int, bool] = {poll_id + 1: False for poll_id in valid_node_ids}
         self._poll_devs_ready = threading.Event()
         self._poll_thread_not_running = threading.Event()
         self._poll_thread_not_running.set()
@@ -195,7 +196,8 @@ class AresReceiverPolling:
         self._self_ready = threading.Event()
         node_id = self._lora_dev.setting(SettingId.ID)
         assert isinstance(node_id, int)
-        self._node_id: int = node_id
+        # Decrement this by one
+        self._node_id: int = node_id - 1
         self._poll_cb = poll_cb
 
     def _lora_log_callback(self, src_id: int, message: str):
