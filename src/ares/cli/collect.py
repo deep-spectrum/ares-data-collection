@@ -13,7 +13,12 @@ def _start_notification(second: int, microsecond: int):
     print(f"Starting measurement at {dt.strftime('%I:%M:%S %p')}")
 
 
+num_poll_calls = 1
+
 def _poll_results(nodes: dict[int, bool]):
+    global num_poll_calls
+    print(f"--- Poll {num_poll_calls} ---")
+    num_poll_calls += 1
     for node, ready in nodes.items():
         print(f"Ares {node - 1}: {'ready' if ready else 'not ready'}")
 
@@ -45,10 +50,12 @@ def collect(
 
     if not poll_ids:
         rx = AresReceiver(str(lora_port), gps_ts, start_notif_cb=_start_notification)
+        wait_msg = "Waiting for start signal"
     else:
         poll_ids_set = set(poll_ids)
         rx = AresReceiverPolling(str(lora_port), gps_ts, 30.0, poll_ids_set, poll_cb=_poll_results)
         rx.start()
+        wait_msg = "Waiting until every node is ready"
     rx_id = rx.node_id
 
     save_path = Path(get_setting(Configuration.SAVE_LOCATION))
@@ -66,7 +73,7 @@ def collect(
 
     try:
         print(f"Saving to {save_path}")
-        print("Waiting for start signal")
+        print(wait_msg)
         rx.stream_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
     except KeyboardInterrupt:
         print("No data captured")

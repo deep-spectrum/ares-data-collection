@@ -231,12 +231,12 @@ class AresReceiverPolling:
     def _poll_thread_handler(self):
         timeout = None
         while not self._poll_thread_not_running.wait(timeout):
+            self._call_user_poll_cb()
             timeout = self._poll_period
             for poll_id in self._poll_ids.keys():
                 self._poll_ids[poll_id] = self._poll_node(poll_id)
             if all(self._poll_ids.values()):
                 self._poll_devs_ready.set()
-            self._call_user_poll_cb()
 
     def _stop(self):
         self._poll_thread_not_running.set()
