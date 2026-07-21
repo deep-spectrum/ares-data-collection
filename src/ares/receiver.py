@@ -8,6 +8,7 @@ from pathlib import Path
 import logging
 from weakref import WeakSet
 from typing import Callable
+import ares_iq_ext
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -297,13 +298,17 @@ class AresReceiverPolling:
         return start_time
 
     def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
-                     silent: bool = True, chunk_size: int = int(4e9), start_delay: int = 30):
+                     silent: bool = True, chunk_size: int = int(4e9), start_delay_sec: int = 30, start_delay_usec: int = 0):
         self._lora_dev.led(1, LoraLedState.BLINK)
         self._poll_devs_ready.wait()
         with self._lora_tx_lock:
-            start_time = self._start(start_delay)
+            if self._gps_timestamping:
+                start_sec = self._start(start_delay_sec)
+                start_usec = 0
+            else:
+                start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
             self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent,
-                                   start_time=SmStartTime(second=start_time))
+                                   start_time=SmStartTime(second=start_sec, microsecond=start_usec))
             self._sm_dev.abort_measurement()
 
     def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
