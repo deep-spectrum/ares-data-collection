@@ -190,6 +190,7 @@ class AresReceiverPolling:
         )
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.start_driver()
+        self._lora_dev.set_logging_level(20)
 
         sm_class = self._get_dev_class()
         self._sm_dev: SM200C | SM435C = sm_class(SmConfigs(gps_model=model.value))
