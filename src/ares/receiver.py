@@ -54,7 +54,7 @@ class AresReceiver:
         )
 
         self._lora_dev = LoraSerial(lora_configs)
-        self._lora_dev.set_logging_level(20)
+        self._lora_dev.set_logging_level(10)
         self._lora_dev.start_driver()
         self._dev_ready = threading.Event()
 
@@ -126,11 +126,14 @@ class AresReceiver:
             self._sm_dev.abort_measurement()
             return
 
+        self._dev_ready.set()
+
         try:
             self._stream_data(center, bw, duration, save_directory, silent, chunk_size)
         finally:
             self._lora_dev.ready = False
             self._lora_dev.led(1, LoraLedState.OFF)
+            self._dev_ready.clear()
 
     def capture_live_data(self, center: float, bw: float, capture_size: int = int(4e9), silent: bool = False,
                           verbose: bool = False):
