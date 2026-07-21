@@ -7,7 +7,6 @@ from datetime import timedelta
 from pathlib import Path
 import logging
 from weakref import WeakSet
-import random
 from typing import Callable
 
 logger = logging.getLogger("ares_receiver")
@@ -17,7 +16,7 @@ _instances = WeakSet()
 def _shutdown_receivers():
     global _instances
     for x in _instances:
-        x._stop()
+        pass  # This should be something that stops any running threads
 
 
 threading._register_atexit(_shutdown_receivers)
@@ -28,8 +27,6 @@ class AresReceiver:
                  lora_port: str,
                  gps_timestamping: bool,
                  model: GpsModel = GpsModel.PORTABLE,
-                 heartbeat_lower: float = 30,
-                 heartbeat_upper: float = 60,
                  start_notif_cb: Callable[[int, int], None] | None = None):
         """Initialize the AresReceiver instance.
 
@@ -41,23 +38,17 @@ class AresReceiver:
         lora_configs = LoraSerialConfig(
             port=lora_port,
             start_callback=self._lora_start_cb,
-            claim_callback=self._lora_claim_event
+            poll_callback=self._poll_callback,
         )
-
-        if heartbeat_lower >= heartbeat_upper:
-            raise AttributeError("Lower bound must be smaller than upper bound")
-
-        self._heartbeat_lower = heartbeat_lower
-        self._heartbeat_upper = heartbeat_upper
 
         self._lora_dev = LoraSerial(lora_configs)
         self._lora_dev.start_driver()
         self._dev_ready = threading.Event()
-        self._heartbeat_lock = threading.Lock()
-        self._heartbeat_not_running = threading.Event()
-        self._heartbeat_not_running.set()
-        self._heartbeat_thread: threading.Thread | None = None
-        self._heartbeat_strobe_cnt = 3
+
+        self._lora_tx_lock = threading.Lock()
+        self._check_dev_ready_not_running = threading.Event()
+        self._check_dev_ready_not_running.set()
+        self._lora_ready_thread: threading.Thread | None = None
 
         sm_class = self._get_dev_class()
         self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
@@ -86,27 +77,30 @@ class AresReceiver:
             self._start_time_usec = microseconds
             self._start_signal.set()
 
-    def _lora_heartbeat(self):
-        sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
-        logger.debug(f"Sleeping for {sleep_time} seconds")
-        while not self._heartbeat_not_running.wait(sleep_time):
-            with self._heartbeat_lock:
-                ready = self._dev_ready.is_set()
-                try:
-                    self._lora_dev.send_heartbeat(ready, strobe_count=self._heartbeat_strobe_cnt)
-                except TimeoutError:
-                    logger.error("Timeout error occurred")
-            sleep_time = random.uniform(self._heartbeat_lower, self._heartbeat_upper)
-            logger.debug(f"Sleeping for {sleep_time} seconds")
+    @staticmethod
+    def _poll_callback(src: int):
+        logger.debug(f"Received poll event from {src}")
 
-    def _lora_claim_event(self, host_id: int):
-        self._heartbeat_strobe_cnt = 1
+    def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+                     silent: bool = True, chunk_size: int = int(4e9)):
+        self._lora_dev.ready = True
+        self._start_signal.wait()
+        if self._start_notif is not None:
+            self._start_notif(self._start_time_sec, self._start_time_usec)
+        with self._lora_tx_lock:
+            self._start_signal.clear()
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory,
+                                   start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
+            self._sm_dev.abort_measurement()
 
     def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
-                     silent: bool = True, chunk_size: int = int(4e9), now: bool = False):
+                    silent: bool = True, chunk_size: int = int(4e9), now: bool = False):
         """Wait for the start signal for collecting data and collect data.
 
         Args:
+            now:
+            chunk_size:
+            silent:
             center: The center frequency.
             bw: The bandwidth.
             duration: The capture duration of the data.
@@ -120,21 +114,13 @@ class AresReceiver:
             self._sm_dev.abort_measurement()
             return
 
-        self._dev_ready.set()
+        try:
+            self._stream_data(center, bw, duration, save_directory, silent, chunk_size)
+        finally:
+            self._lora_dev.ready = False
 
-        self._start_signal.wait()
-
-        if self._start_notif is not None:
-            self._start_notif(self._start_time_sec, self._start_time_usec)
-
-        with self._heartbeat_lock:
-            self._start_signal.clear()
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory,
-                                   start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
-            self._dev_ready.clear()
-            self._sm_dev.abort_measurement()
-
-    def capture_live_data(self, center: float, bw: float, capture_size: int = int(4e9), silent: bool = False, verbose: bool = False):
+    def capture_live_data(self, center: float, bw: float, capture_size: int = int(4e9), silent: bool = False,
+                          verbose: bool = False):
         """Capture an I/Q data live shot with a specified capture size.
 
         Args:
@@ -154,37 +140,7 @@ class AresReceiver:
         iq, _, _ = self._sm_dev.capture_iq(center, bw, capture_size, silent, verbose)
         return iq
 
-    def start_heartbeats(self):
-        """Start the receiver background tasks and make the node visible to the world."""
-        if not self._heartbeat_not_running.is_set():
-            raise RuntimeError("Already running")
-        self._heartbeat_not_running.clear()
-        self._heartbeat_thread = threading.Thread(target=self._lora_heartbeat)
-        assert isinstance(self._heartbeat_thread, threading.Thread)
-        self._heartbeat_thread.start()
-
-        global _instances
-        _instances.add(self)
-
-    def _stop(self):
-        self._heartbeat_not_running.set()
-
-    def stop_heartbeats(self):
-        """Stop the receiver background tasks."""
-        if self._heartbeat_not_running.is_set():
-            raise RuntimeError("Already stopped")
-        self._stop()
-
-        if self._heartbeat_thread is not None:
-            self._heartbeat_thread.join(20.0)
-            self._heartbeat_thread = None
-
-        global _instances
-        if self in _instances:
-            _instances.remove(self)
-
     def _cleanup(self):
-        self._stop()
         self._sm_dev.close()
         try:
             self._lora_dev.stop_driver()
