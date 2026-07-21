@@ -9,6 +9,7 @@ import logging
 from weakref import WeakSet
 from typing import Callable
 import ares_iq_ext
+from contextlib import contextmanager
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -21,6 +22,16 @@ def _shutdown_receivers():
 
 
 threading._register_atexit(_shutdown_receivers)
+
+
+@contextmanager
+def acquire_lock(lock: threading.Lock, timeout: float = -1):
+    result = lock.acquire(timeout=timeout)
+    try:
+        yield result
+    finally:
+        if result:
+            lock.release()
 
 
 class AresReceiver:
@@ -171,7 +182,8 @@ class AresReceiver:
 
 class AresReceiverPolling:
     def __init__(self, lora_port: str, gps_timestamping: bool, poll_period: float, valid_node_ids: set[int],
-                 model: GpsModel = GpsModel.PORTABLE, poll_cb: Callable[[dict[int, bool]], None] | None = None):
+                 model: GpsModel = GpsModel.PORTABLE, poll_cb: Callable[[dict[int, bool]], None] | None = None,
+                 start_notif_cb: Callable[[int, int], None] | None = None):
         lora_configs = LoraSerialConfig(
             port=lora_port,
             log_callback=self._lora_log_callback
@@ -201,6 +213,8 @@ class AresReceiverPolling:
         self._node_id: int = node_id - 1
         self._poll_cb = poll_cb
 
+        self._start_cb = start_notif_cb
+
     def _lora_log_callback(self, src_id: int, message: str):
         pass
 
@@ -214,9 +228,11 @@ class AresReceiverPolling:
                 return SM435C
         raise OSError("No SM device found")
 
-    def _poll_node(self, node_id: int) -> bool:
+    def _poll_node(self, node_id: int) -> bool | None:
         ret = False
-        with self._lora_tx_lock:
+        with acquire_lock(self._lora_tx_lock, 2) as acquired:
+            if not acquired:
+                return None
             try:
                 ret = self._lora_dev.send_poll(node_id)
             except TimeoutError as e:
@@ -233,12 +249,14 @@ class AresReceiverPolling:
     def _poll_thread_handler(self):
         timeout = 0
         while not self._poll_thread_not_running.wait(timeout):
-            self._call_user_poll_cb()
             timeout = self._poll_period
             for poll_id in self._poll_ids.keys():
-                self._poll_ids[poll_id] = self._poll_node(poll_id)
+                result = self._poll_node(poll_id)
+                if result is not None:
+                    self._poll_ids[poll_id] = result
             if all(self._poll_ids.values()):
                 self._poll_devs_ready.set()
+            self._call_user_poll_cb()
 
     def _threading_exit_func(self):
         self._stop()
@@ -299,6 +317,10 @@ class AresReceiverPolling:
         else:
             start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
         self._lora_dev.start(start_sec, start_usec)
+
+        if self._start_cb is not None:
+            self._start_cb(start_sec, start_usec)
+
         return start_sec, start_usec
 
     def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
