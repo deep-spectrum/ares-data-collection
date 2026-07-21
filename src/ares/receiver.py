@@ -270,3 +270,35 @@ class AresReceiverPolling:
         if ret == 0:
             raise ValueError("ID setting not valid")
         return ret - 1
+
+    def _start(self, start_delay: int) -> int:
+        self._lora_dev.led(1, LoraLedState.ON)
+        sm_time = self._sm_dev.get_gps_info(True)
+        start_time = sm_time.sec_since_epoch + start_delay
+        self._lora_dev.start(sm_time.sec_since_epoch + start_delay, 0)
+        return start_time
+
+    def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+                     silent: bool = True, chunk_size: int = int(4e9), start_delay: int = 30):
+        self._lora_dev.led(1, LoraLedState.BLINK)
+        self._poll_devs_ready.wait()
+        with self._lora_tx_lock:
+            start_time = self._start(start_delay)
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent,
+                                   start_time=SmStartTime(second=start_time))
+            self._sm_dev.abort_measurement()
+
+    def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+                    silent: bool = True, chunk_size: int = int(4e9), now: bool = False):
+        if self._gps_timestamping:
+            self._sm_dev.enable_gps_timestamping(True)
+
+        if now:
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent)
+            self._sm_dev.abort_measurement()
+            return
+
+        try:
+            self._stream_data(center, bw, duration, save_directory, silent, chunk_size)
+        finally:
+            self._lora_dev.led(1, LoraLedState.OFF)
