@@ -8,6 +8,7 @@ from pathlib import Path
 import logging
 from weakref import WeakSet
 from typing import Callable
+import copy
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -170,7 +171,7 @@ class AresReceiver:
 
 class AresReceiverPolling:
     def __init__(self, lora_port: str, gps_timestamping: bool, poll_period: float, valid_node_ids: set[int],
-                 model: GpsModel = GpsModel.PORTABLE):
+                 model: GpsModel = GpsModel.PORTABLE, poll_cb: Callable[[dict[int, bool]], None] | None = None):
         lora_configs = LoraSerialConfig(
             port=lora_port,
             log_callback=self._lora_log_callback
@@ -191,6 +192,12 @@ class AresReceiverPolling:
         self._poll_thread: threading.Thread | None = None
 
         self._lora_tx_lock = threading.Lock()
+
+        self._self_ready = threading.Event()
+        node_id = self._lora_dev.setting(SettingId.ID)
+        assert isinstance(node_id, int)
+        self._node_id: int = node_id
+        self._poll_cb = poll_cb
 
     def _lora_log_callback(self, src_id: int, message: str):
         pass
@@ -215,14 +222,21 @@ class AresReceiverPolling:
                     logger.error(e)
         return ret
 
+    def _call_user_poll_cb(self):
+        if self._poll_cb is not None:
+            param: dict[int, bool] = {self._node_id: self._self_ready.is_set()}
+            param.update(self._poll_ids)
+            self._poll_cb(param)
+
     def _poll_thread_handler(self):
         timeout = None
         while not self._poll_thread_not_running.wait(timeout):
             timeout = self._poll_period
             for poll_id in self._poll_ids.keys():
-                self._poll_node(poll_id)
+                self._poll_ids[poll_id] = self._poll_node(poll_id)
             if all(self._poll_ids.values()):
                 self._poll_devs_ready.set()
+            self._call_user_poll_cb()
 
     def _stop(self):
         self._poll_thread_not_running.set()
@@ -298,7 +312,10 @@ class AresReceiverPolling:
             self._sm_dev.abort_measurement()
             return
 
+        self._self_ready.set()
+
         try:
             self._stream_data(center, bw, duration, save_directory, silent, chunk_size)
         finally:
             self._lora_dev.led(1, LoraLedState.OFF)
+            self._self_ready.clear()
