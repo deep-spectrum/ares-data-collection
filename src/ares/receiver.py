@@ -190,6 +190,8 @@ class AresReceiverPolling:
         self._poll_thread_not_running.set()
         self._poll_thread: threading.Thread | None = None
 
+        self._lora_tx_lock = threading.Lock()
+
     def _lora_log_callback(self, src_id: int, message: str):
         pass
 
@@ -205,11 +207,12 @@ class AresReceiverPolling:
 
     def _poll_node(self, node_id: int) -> bool:
         ret = False
-        try:
-            ret = self._lora_dev.send_poll(node_id)
-        except TimeoutError as e:
-            if str(e) != "Timed out waiting for a heartbeat response":
-                logger.error(e)
+        with self._lora_tx_lock:
+            try:
+                ret = self._lora_dev.send_poll(node_id)
+            except TimeoutError as e:
+                if str(e) != "Timed out waiting for a heartbeat response":
+                    logger.error(e)
         return ret
 
     def _poll_thread_handler(self):
