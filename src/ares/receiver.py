@@ -46,9 +46,6 @@ class AresReceiver:
         self._dev_ready = threading.Event()
 
         self._lora_tx_lock = threading.Lock()
-        self._check_dev_ready_not_running = threading.Event()
-        self._check_dev_ready_not_running.set()
-        self._lora_ready_thread: threading.Thread | None = None
 
         sm_class = self._get_dev_class()
         self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
@@ -166,3 +163,57 @@ class AresReceiver:
 
     def __del__(self):
         self._cleanup()
+
+
+class AresReceiverPolling:
+    def __init__(self, lora_port: str, gps_timestamping: bool, poll_period: float, valid_node_ids: set[int],
+                 model: GpsModel = GpsModel.PORTABLE):
+        lora_configs = LoraSerialConfig(
+            port=lora_port,
+            log_callback=self._lora_log_callback
+        )
+        self._lora_dev = LoraSerial(lora_configs)
+        self._lora_dev.start_driver()
+
+        sm_class = self._get_dev_class()
+        self._sm_dev: SM200C | SM435C = sm_class(SmConfigs(gps_model=model.value))
+        self._sm_dev.open()
+        self._gps_timestamping = gps_timestamping
+
+        self._poll_period = poll_period
+        self._poll_ids: dict[int, bool] = {poll_id: False for poll_id in valid_node_ids}
+        self._poll_devs_ready = threading.Event()
+        self._poll_thread_not_running = threading.Event()
+        self._poll_thread_not_running.set()
+        self._poll_thread: threading.Thread | None = None
+
+    def _lora_log_callback(self, src_id: int, message: str):
+        pass
+
+    @staticmethod
+    def _get_dev_class() -> type[SM200C | SM435C]:
+        devices = sm_get_device_list(usb=False, max_network_devices=1)
+        if devices:
+            if devices[0].type == SmDeviceType.SM200C:
+                return SM200C
+            if devices[0].type == SmDeviceType.SM435C:
+                return SM435C
+        raise OSError("No SM device found")
+
+    def _poll_node(self, node_id: int) -> bool:
+        ret = False
+        try:
+            ret = self._lora_dev.send_poll(node_id)
+        except TimeoutError as e:
+            if str(e) != "Timed out waiting for a heartbeat response":
+                logger.error(e)
+        return ret
+
+    def _poll_thread_handler(self):
+        timeout = None
+        while not self._poll_thread_not_running.wait(timeout):
+            timeout = self._poll_period
+            for poll_id in self._poll_ids.keys():
+                self._poll_node(poll_id)
+            if all(self._poll_ids.values()):
+                self._poll_devs_ready.set()
