@@ -81,11 +81,13 @@ class AresReceiver:
     def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
                      silent: bool = True, chunk_size: int = int(4e9)):
         self._lora_dev.ready = True
+        self._lora_dev.led(1, LoraLedState.BLINK)
         self._start_signal.wait()
         if self._start_notif is not None:
             self._start_notif(self._start_time_sec, self._start_time_usec)
         with self._lora_tx_lock:
             self._start_signal.clear()
+            self._lora_dev.led(1, LoraLedState.ON)
             self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory,
                                    start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
             self._sm_dev.abort_measurement()
@@ -115,6 +117,7 @@ class AresReceiver:
             self._stream_data(center, bw, duration, save_directory, silent, chunk_size)
         finally:
             self._lora_dev.ready = False
+            self._lora_dev.led(1, LoraLedState.OFF)
 
     def capture_live_data(self, center: float, bw: float, capture_size: int = int(4e9), silent: bool = False,
                           verbose: bool = False):
@@ -217,3 +220,50 @@ class AresReceiverPolling:
                 self._poll_node(poll_id)
             if all(self._poll_ids.values()):
                 self._poll_devs_ready.set()
+
+    def _stop(self):
+        self._poll_thread_not_running.set()
+
+    def _cleanup(self):
+        self._stop()
+        self._sm_dev.close()
+        try:
+            self._lora_dev.stop_driver()
+        except RuntimeError:
+            pass
+
+    def __del__(self):
+        self._cleanup()
+
+    def start(self):
+        if not self._poll_thread_not_running.is_set():
+            raise RuntimeError("Already running")
+        self._poll_thread_not_running.clear()
+        self._poll_thread = threading.Thread(target=self._poll_thread_handler)
+        assert isinstance(self._poll_thread, threading.Thread)
+        self._poll_thread.start()
+
+        global _instances
+        _instances.add(self)
+
+    def stop(self):
+        if self._poll_thread_not_running.is_set():
+            raise RuntimeError("already stopped")
+        self._stop()
+
+        if self._poll_thread is not None:
+            self._poll_thread.join(20.0)
+            self._poll_thread = None
+
+        global _instances
+        if self in _instances:
+            _instances.remove(self)
+
+    @property
+    def node_id(self):
+        ret = self._lora_dev.setting(SettingId.ID)
+        if ret is None:
+            raise RuntimeError("setting return value is `None`")
+        if ret == 0:
+            raise ValueError("ID setting not valid")
+        return ret - 1
