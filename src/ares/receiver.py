@@ -8,7 +8,6 @@ from pathlib import Path
 import logging
 from weakref import WeakSet
 from typing import Callable
-import copy
 
 logger = logging.getLogger("ares_receiver")
 _instances = WeakSet()
@@ -17,7 +16,7 @@ _instances = WeakSet()
 def _shutdown_receivers():
     global _instances
     for x in _instances:
-        pass  # This should be something that stops any running threads
+        x._threading_exit_func()
 
 
 threading._register_atexit(_shutdown_receivers)
@@ -229,7 +228,7 @@ class AresReceiverPolling:
             self._poll_cb(param)
 
     def _poll_thread_handler(self):
-        timeout = None
+        timeout = 0
         while not self._poll_thread_not_running.wait(timeout):
             self._call_user_poll_cb()
             timeout = self._poll_period
@@ -237,6 +236,9 @@ class AresReceiverPolling:
                 self._poll_ids[poll_id] = self._poll_node(poll_id)
             if all(self._poll_ids.values()):
                 self._poll_devs_ready.set()
+
+    def _threading_exit_func(self):
+        self._stop()
 
     def _stop(self):
         self._poll_thread_not_running.set()
