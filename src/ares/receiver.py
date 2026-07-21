@@ -290,23 +290,23 @@ class AresReceiverPolling:
             raise ValueError("ID setting not valid")
         return ret - 1
 
-    def _start(self, start_delay: int) -> int:
+    def _start(self, start_delay_sec: int, start_delay_usec: int) -> tuple[int, int]:
         self._lora_dev.led(1, LoraLedState.ON)
-        sm_time = self._sm_dev.get_gps_info(True)
-        start_time = sm_time.sec_since_epoch + start_delay
-        self._lora_dev.start(sm_time.sec_since_epoch + start_delay, 0)
-        return start_time
+        start_usec = 0
+        if self._gps_timestamping:
+            sm_gps = self._sm_dev.get_gps_info(True)
+            start_sec = sm_gps.sec_since_epoch + start_delay_sec
+        else:
+            start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
+        self._lora_dev.start(start_sec, start_usec)
+        return start_sec, start_usec
 
     def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
                      silent: bool = True, chunk_size: int = int(4e9), start_delay_sec: int = 30, start_delay_usec: int = 0):
         self._lora_dev.led(1, LoraLedState.BLINK)
         self._poll_devs_ready.wait()
         with self._lora_tx_lock:
-            if self._gps_timestamping:
-                start_sec = self._start(start_delay_sec)
-                start_usec = 0
-            else:
-                start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
+            start_sec, start_usec = self._start(start_delay_sec, start_delay_usec)
             self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent,
                                    start_time=SmStartTime(second=start_sec, microsecond=start_usec))
             self._sm_dev.abort_measurement()
