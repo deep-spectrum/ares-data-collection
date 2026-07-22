@@ -6,6 +6,7 @@ from .configure import get_setting, Configuration
 from pathlib import Path
 from ares_iq_ext import datetime_from_timeval
 import shutil
+from .termui import confirm
 
 
 def _start_notification(second: int, microsecond: int):
@@ -48,14 +49,18 @@ def collect(
         poll_ids: The node IDs to poll for. This will also designate the node as the polling node.
     """
 
-    if not poll_ids:
-        rx = AresReceiver(str(lora_port), gps_ts, start_notif_cb=_start_notification)
-        wait_msg = "Waiting for start signal"
-    else:
-        poll_ids_set = set(poll_ids)
-        rx = AresReceiverPolling(str(lora_port), gps_ts, 30.0, poll_ids_set, poll_cb=_poll_results)
-        rx.start()
-        wait_msg = "Waiting until every node is ready"
+    try:
+        if not poll_ids:
+            rx = AresReceiver(str(lora_port), gps_ts, start_notif_cb=_start_notification)
+            wait_msg = "Waiting for start signal"
+        else:
+            poll_ids_set = set(poll_ids)
+            rx = AresReceiverPolling(str(lora_port), gps_ts, 30.0, poll_ids_set, poll_cb=_poll_results)
+            rx.start()
+            wait_msg = "Waiting until every node is ready"
+    except OSError:
+        print("Please turn on SM device or correct the network profile")
+        return
     rx_id = rx.node_id
 
     save_path = Path(get_setting(Configuration.SAVE_LOCATION))
@@ -74,7 +79,7 @@ def collect(
     try:
         print(f"Saving to {save_path}")
         print(wait_msg)
-        rx.stream_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now)
+        rx.stream_data(center, bandwidth, timedelta(seconds=duration), save_path, quiet, now=now, continue_callback=confirm)
     except KeyboardInterrupt:
         print("No data captured")
         shutil.rmtree(unique_save_path)
