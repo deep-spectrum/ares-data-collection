@@ -64,9 +64,9 @@ class AresReceiver:
 
         self._lora_tx_lock = threading.Lock()
 
-        # sm_class = self._get_dev_class()
-        # self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
-        # self._sm_dev.open()
+        sm_class = self._get_dev_class()
+        self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
+        self._sm_dev.open()
         self._gps_timestamping = gps_timestamping
 
         self._start_signal = threading.Event()
