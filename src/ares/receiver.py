@@ -123,6 +123,7 @@ class AresReceiver:
             duration: The capture duration of the data.
             save_directory: The directory path to save the data to.
         """
+        self._start_signal.clear()
         if self._gps_timestamping:
             self._sm_dev.enable_gps_timestamping(True)
 
@@ -321,6 +322,16 @@ class AresReceiverPolling:
             raise ValueError("ID setting not valid")
         return ret - 1
 
+    def _start_node(self, node_id: int, start_delay_sec: int, start_delay_usec: int, max_attempts: int = 5):
+        attempts = 0
+        while attempts < max_attempts:
+            try:
+                self._lora_dev.start(start_delay_sec, start_delay_usec, broadcast=False, destination_id=node_id)
+            except TimeoutError:
+                attempts += 1
+            else:
+                break
+
     def _start(self, start_delay_sec: int, start_delay_usec: int) -> tuple[int, int]:
         self._lora_dev.led(1, LoraLedState.ON)
         start_usec = 0
@@ -329,7 +340,9 @@ class AresReceiverPolling:
             start_sec = sm_gps.sec_since_epoch + start_delay_sec
         else:
             start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
-        self._lora_dev.start(start_sec, start_usec)
+
+        for poll_id in self._poll_ids.keys():
+            self._start_node(poll_id, start_sec, start_usec)
 
         if self._start_cb is not None:
             self._start_cb(start_sec, start_usec)
