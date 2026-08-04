@@ -1,6 +1,6 @@
 from ares_iq.signal_hound import SM200C, SM435C, SmConfigs, GpsModel, sm_get_device_list, SmDevice, GpsState, \
     SmDeviceType, SmStartTime
-from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraConfig, LoraLedState, LoraCodingRate, \
+from ares_lora import LoraSerial, LoraException, LoraSerialConfig, LoraLedState, LoraCodingRate, \
     LoraSpreadingFactor, LoraBandwidth, SettingId
 import threading
 from datetime import timedelta
@@ -40,26 +40,26 @@ def acquire_lock(lock: threading.Lock, timeout: float = -1):
 
 class AresReceiver:
     def __init__(self,
-                 lora_port: str,
+                 lora_dev: LoraSerial,
                  gps_timestamping: bool,
                  model: GpsModel = GpsModel.PORTABLE,
                  start_notif_cb: Callable[[int, int], None] | None = None):
         """Initialize the AresReceiver instance.
 
         Args:
-            lora_port: The serial port ares lora is on.
+            lora_dev: The Lora serial device object to use.
             gps_timestamping: Use GPS timestamping for the timebase.
             model: The GPS model to use. Default model used is PORTABLE.
         """
-        lora_configs = LoraSerialConfig(
-            port=lora_port,
-            start_callback=self._lora_start_cb,
-            poll_callback=self._poll_callback,
-        )
 
-        self._lora_dev = LoraSerial(lora_configs)
+        self._lora_dev = lora_dev
+        self._lora_dev.register_start_hook(self._lora_start_cb)
+        self._lora_dev.register_poll_hook(self._poll_callback)
         self._lora_dev.set_logging_level(10)
-        self._lora_dev.start_driver()
+        try:
+            self._lora_dev.start_driver()
+        except RuntimeError:
+            pass
         self._dev_ready = threading.Event()
 
         self._lora_tx_lock = threading.Lock()
@@ -96,7 +96,7 @@ class AresReceiver:
         logger.debug(f"Received poll event from {src}")
 
     def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
-                     silent: bool = True, chunk_size: int = int(4e9)):
+                     silent: bool = True, chunk_size: int = int(4e9), ref_level: float = -20):
         self._lora_dev.ready = True
         self._lora_dev.led(1, LoraLedState.BLINK)
         self._start_signal.wait()
@@ -105,11 +105,12 @@ class AresReceiver:
         with self._lora_tx_lock:
             self._start_signal.clear()
             self._lora_dev.led(1, LoraLedState.ON)
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory,
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level,
                                    start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
             self._sm_dev.abort_measurement()
 
     def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
+                    ref_level: float = -20,
                     silent: bool = True, chunk_size: int = int(4e9), now: bool = False, **kwargs):
         """Wait for the start signal for collecting data and collect data.
 
@@ -126,14 +127,14 @@ class AresReceiver:
             self._sm_dev.enable_gps_timestamping(True)
 
         if now:
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent)
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level, silent=silent)
             self._sm_dev.abort_measurement()
             return
 
         self._dev_ready.set()
 
         try:
-            self._stream_data(center, bw, duration, save_directory, silent, chunk_size)
+            self._stream_data(center, bw, duration, save_directory, silent, chunk_size, ref_level)
         finally:
             self._lora_dev.ready = False
             self._lora_dev.led(1, LoraLedState.OFF)
@@ -191,16 +192,16 @@ class AresReceiver:
 
 
 class AresReceiverPolling:
-    def __init__(self, lora_port: str, gps_timestamping: bool, poll_period: float, valid_node_ids: set[int],
+    def __init__(self, lora_dev: LoraSerial, gps_timestamping: bool, poll_period: float, valid_node_ids: set[int],
                  model: GpsModel = GpsModel.PORTABLE, poll_cb: Callable[[dict[int, bool]], None] | None = None,
                  start_notif_cb: Callable[[int, int], None] | None = None):
-        lora_configs = LoraSerialConfig(
-            port=lora_port,
-            log_callback=self._lora_log_callback
-        )
-        self._lora_dev = LoraSerial(lora_configs)
+        self._lora_dev = lora_dev
+        self._lora_dev.register_log_hook(self._lora_log_callback)
         self._lora_dev.set_logging_level(10)
-        self._lora_dev.start_driver()
+        try:
+            self._lora_dev.start_driver()
+        except RuntimeError:
+            pass
 
         self._poll_period = poll_period
         # Make things make sense. Since 0 is invalid for a node ID, things are incremented by 1
@@ -244,7 +245,7 @@ class AresReceiverPolling:
             if not acquired:
                 return None
             try:
-                ret = self._lora_dev.send_poll(node_id)
+                ret = self._lora_dev.send_poll(node_id, 5.0)
             except TimeoutError as e:
                 if str(e) != "Timed out waiting for a heartbeat response":
                     logger.error(e)
@@ -336,7 +337,8 @@ class AresReceiverPolling:
         return start_sec, start_usec
 
     def _stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
-                     silent: bool = True, chunk_size: int = int(4e9), start_delay_sec: int = 30, start_delay_usec: int = 0, continue_callback: Callable[[str], bool] | None = None):
+                     silent: bool = True, chunk_size: int = int(4e9), ref_level: float = -20, start_delay_sec: int = 60,
+                     start_delay_usec: int = 0, continue_callback: Callable[[str], bool] | None = None):
         self._lora_dev.led(1, LoraLedState.BLINK)
         self._poll_devs_ready.wait()
         with self._lora_tx_lock:
@@ -347,23 +349,27 @@ class AresReceiverPolling:
 
             start_sec, start_usec = self._start(start_delay_sec, start_delay_usec)
             self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent,
-                                   start_time=SmStartTime(second=start_sec, microsecond=start_usec))
+                                   start_time=SmStartTime(second=start_sec, microsecond=start_usec),
+                                   ref_level=ref_level)
             self._sm_dev.abort_measurement()
 
     def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
-                    silent: bool = True, chunk_size: int = int(4e9), now: bool = False, continue_callback: Callable[[str], bool] | None = None):
+                    ref_level: float = -20,
+                    silent: bool = True, chunk_size: int = int(4e9), now: bool = False,
+                    continue_callback: Callable[[str], bool] | None = None):
         if self._gps_timestamping:
             self._sm_dev.enable_gps_timestamping(True)
 
         if now:
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent)
+            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level, silent=silent)
             self._sm_dev.abort_measurement()
             return
 
         self._self_ready.set()
 
         try:
-            self._stream_data(center, bw, duration, save_directory, silent, chunk_size, continue_callback=continue_callback)
+            self._stream_data(center, bw, duration, save_directory, silent, chunk_size,
+                              continue_callback=continue_callback, ref_level=ref_level)
         finally:
             self._lora_dev.led(1, LoraLedState.OFF)
             self._self_ready.clear()

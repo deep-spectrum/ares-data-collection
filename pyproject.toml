@@ -25,7 +25,7 @@ ares = "ares.cli.main:main"
 
 [tool.uv.sources]
 ares-iq = { git = "https://github.com/deep-spectrum/Ares-IQ.git", rev = "master" }
-ares-lora = { git = "https://github.com/deep-spectrum/ares-lora.git", subdirectory = "serial-driver", rev = "v1.2.0" }
+ares-lora = { git = "https://github.com/deep-spectrum/ares-lora.git", subdirectory = "serial-driver", rev = "master" }
 
 [dependency-groups]
 dev = [
