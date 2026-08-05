@@ -64,9 +64,9 @@ class AresReceiver:
 
         self._lora_tx_lock = threading.Lock()
 
-        sm_class = self._get_dev_class()
-        self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
-        self._sm_dev.open()
+        #sm_class = self._get_dev_class()
+        #self._sm_dev = sm_class(SmConfigs(gps_model=model.value))
+        #self._sm_dev.open()
         self._gps_timestamping = gps_timestamping
 
         self._start_signal = threading.Event()
@@ -105,9 +105,17 @@ class AresReceiver:
         with self._lora_tx_lock:
             self._start_signal.clear()
             self._lora_dev.led(1, LoraLedState.ON)
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level,
-                                   start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
-            self._sm_dev.abort_measurement()
+            print(f"Streamed data at timestamp. Parameters:")
+            print(f"Center Frequency: {center} Hz")
+            print(f"Bandwidth: {bw} Hz")
+            print(f"Duration: {duration}")
+            print(f"Save location: {save_directory}")
+            print(f"Silent: {silent}")
+            print(f"Chunk size: {chunk_size} bytes")
+            print(f"Reference level: {ref_level} dB")
+            #self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level,
+            #                       start_time=SmStartTime(self._start_time_sec, self._start_time_usec), silent=silent)
+            #self._sm_dev.abort_measurement()
 
     def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
                     ref_level: float = -20,
@@ -125,11 +133,13 @@ class AresReceiver:
         """
         self._start_signal.clear()
         if self._gps_timestamping:
-            self._sm_dev.enable_gps_timestamping(True)
+            print("GPS Timestamping")
+            #self._sm_dev.enable_gps_timestamping(True)
 
         if now:
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level, silent=silent)
-            self._sm_dev.abort_measurement()
+            print("Data collected NOW")
+            #self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level, silent=silent)
+            #self._sm_dev.abort_measurement()
             return
 
         self._dev_ready.set()
@@ -157,9 +167,11 @@ class AresReceiver:
         """
 
         if self._gps_timestamping:
-            self._sm_dev.enable_gps_timestamping(True)
+            print("GPS Timestamping")
+            # self._sm_dev.enable_gps_timestamping(True)
 
-        iq, _, _ = self._sm_dev.capture_iq(center, bw, capture_size, silent, verbose)
+        iq = []
+        #iq, _, _ = self._sm_dev.capture_iq(center, bw, capture_size, silent, verbose)
         return iq
 
     def _cleanup(self):
@@ -182,10 +194,12 @@ class AresReceiver:
 
     @property
     def sample_rate(self):
+        return 200e6
         return self._sm_dev.sample_rate
 
     @property
     def ref_level(self):
+        return -20
         return self._sm_dev.ref_level
 
     def __del__(self):
@@ -212,9 +226,9 @@ class AresReceiverPolling:
         self._poll_thread_not_running.set()
         self._poll_thread: threading.Thread | None = None
 
-        sm_class = self._get_dev_class()
-        self._sm_dev: SM200C | SM435C = sm_class(SmConfigs(gps_model=model.value))
-        self._sm_dev.open()
+        #sm_class = self._get_dev_class()
+        #self._sm_dev: SM200C | SM435C = sm_class(SmConfigs(gps_model=model.value))
+        #self._sm_dev.open()
         self._gps_timestamping = gps_timestamping
 
         self._lora_tx_lock = threading.Lock()
@@ -336,8 +350,10 @@ class AresReceiverPolling:
         self._lora_dev.led(1, LoraLedState.ON)
         start_usec = 0
         if self._gps_timestamping:
-            sm_gps = self._sm_dev.get_gps_info(True)
-            start_sec = sm_gps.sec_since_epoch + start_delay_sec
+            print("GPS timestamping")
+            #sm_gps = self._sm_dev.get_gps_info(True)
+            start_sec = ares_iq_ext.time_now()[0]
+            #start_sec = sm_gps.sec_since_epoch + start_delay_sec
         else:
             start_sec, start_usec = ares_iq_ext.add_time(*ares_iq_ext.time_now(), start_delay_sec, start_delay_usec)
 
@@ -359,23 +375,34 @@ class AresReceiverPolling:
                 ret = continue_callback("Start the measurement")
                 if not ret:
                     raise AbortException()
+                self.stop()
 
             start_sec, start_usec = self._start(start_delay_sec, start_delay_usec)
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent,
-                                   start_time=SmStartTime(second=start_sec, microsecond=start_usec),
-                                   ref_level=ref_level)
-            self._sm_dev.abort_measurement()
+            print(f"Streamed data at timestamp. Parameters:")
+            print(f"Center Frequency: {center} Hz")
+            print(f"Bandwidth: {bw} Hz")
+            print(f"Duration: {duration}")
+            print(f"Save location: {save_directory}")
+            print(f"Silent: {silent}")
+            print(f"Chunk size: {chunk_size} bytes")
+            print(f"Reference level: {ref_level} dB")
+            # self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, silent=silent,
+            #                        start_time=SmStartTime(second=start_sec, microsecond=start_usec),
+            #                        ref_level=ref_level)
+            # self._sm_dev.abort_measurement()
 
     def stream_data(self, center: float, bw: float, duration: timedelta, save_directory: str | Path,
                     ref_level: float = -20,
                     silent: bool = True, chunk_size: int = int(4e9), now: bool = False,
                     continue_callback: Callable[[str], bool] | None = None):
         if self._gps_timestamping:
-            self._sm_dev.enable_gps_timestamping(True)
+            print("GPS timestamping")
+            # self._sm_dev.enable_gps_timestamping(True)
 
         if now:
-            self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level, silent=silent)
-            self._sm_dev.abort_measurement()
+            print("Stream data NOW")
+            #self._sm_dev.stream_iq(center, bw, chunk_size, duration, save_directory, ref_level=ref_level, silent=silent)
+            #self._sm_dev.abort_measurement()
             return
 
         self._self_ready.set()

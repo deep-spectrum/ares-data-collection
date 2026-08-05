@@ -9,6 +9,7 @@ import shutil
 from .termui import confirm
 from ares_lora import LoraSerial, LoraSerialConfig
 from threading import Event
+import time
 
 
 def _start_notification(second: int, microsecond: int):
@@ -100,7 +101,7 @@ def _collect_non_polling(lora_port: Path,
         folder_dt = configs['folder_dt']
         assert isinstance(folder_dt, datetime)
         unique_save_path = _get_save_path(folder_dt)
-        unique_save_path.mkdir()
+        unique_save_path.mkdir(exist_ok=True)
         save_dir = unique_save_path / f"rx{rx_dev.node_id}"
         save_dir.mkdir()
 
@@ -118,31 +119,43 @@ def _collect_non_polling(lora_port: Path,
         rx_dev.stream_data(center, bw, timedelta(seconds=duration), save_dir, ref_level, quiet)
         print("Run complete. Rebooting node")
         lora_dev.reboot(5)
+        time.sleep(5)
         lora_dev.start_driver()
 
 
-def _check_configs(dt: datetime, center: float, bw: float, duration: int, ref_level: float, node: int,
-                   lora_dev: LoraSerial) -> bool:
-    configs = lora_dev.poll_node_config(node, 20.0, 5.0, "folder_dt", "bandwidth", "center_freq", "duration",
-                                        "ref_level")
-    return dt == configs["folder_dt"] and center == configs["center_freq"] and bw == configs[
-        "bandwidth"] and duration == configs["duration"] and ref_level == configs["ref_level"]
+def _check_configs(configs: dict[str, datetime | float | int], node: int,
+                   lora_dev: LoraSerial) -> dict[str, bool]:
+    configs_polled = lora_dev.poll_node_config(node, 20.0, 5.0, *configs.keys())
+
+    ret = {}
+    for key in configs_polled.keys():
+        ret[key] = configs[key] == configs_polled[key]
+
+    return ret
 
 
 def _push_configs_node(dt: datetime, center: float, bw: float, duration: int, ref_level: float, node: int,
                        lora_dev: LoraSerial, max_attempts: int):
     attempts = 0
-    while attempts < max_attempts:
+    configs = {
+        "folder_dt": dt,
+        "bandwidth": bw,
+        "center_freq": center,
+        "duration": duration,
+        "ref_level": ref_level,
+    }
+    while attempts < max_attempts and configs:
         try:
-            lora_dev.send_node_configs(node, folder_dt=dt, bandwidth=bw, center_freq=center, duration=duration,
-                                       ref_level=ref_level)
+            lora_dev.send_node_configs(node + 1, **configs)
         except TimeoutError:
+            pass
+        config_poll_results = _check_configs(configs, node + 1, lora_dev)
+
+        for key, val in config_poll_results.items():
+            if val:
+                del configs[key]
+        if configs:
             attempts += 1
-        else:
-            if not _check_configs(dt, center, bw, duration, ref_level, node, lora_dev):
-                attempts += 1
-            else:
-                break
 
     if attempts >= max_attempts:
         print("Unable to configure nodes for next run")
@@ -160,7 +173,7 @@ def _indicate_run_ready_node(node: int, lora_dev: LoraSerial, max_attempts: int)
     attempts = 0
     while attempts < max_attempts:
         try:
-            lora_dev.notify_run_ready(False, node)
+            lora_dev.notify_run_ready(False, node + 1)
         except TimeoutError:
             attempts += 1
         else:
@@ -186,16 +199,16 @@ def _collect_polling(lora_port: Path,
                      quiet: bool,
                      poll_ids: tuple[int, ...]):
     if center is None:
-        print("Center frequency must be specified if collecting data now")
+        print("Center frequency must be specified if this node is meant to configure other nodes")
         exit(1)
     if bandwidth is None:
-        print("Bandwidth must be specified if collecting data now")
+        print("Bandwidth must be specified if this node is meant to configure other nodes")
         exit(1)
     if duration is None:
-        print("Duration must be specified if collecting data now")
+        print("Duration must be specified if this node is meant to configure other nodes")
         exit(1)
     if ref_level is None:
-        print("Reference level must be specified if collecting data now")
+        print("Reference level must be specified if this node is meant to configure other nodes")
         exit(1)
 
     # This is just here for the error message
@@ -208,11 +221,11 @@ def _collect_polling(lora_port: Path,
     run: bool = True
 
     while run:
-        folder_dt = datetime.now()
+        folder_dt = datetime.now().replace(microsecond=0)
         _push_configs(folder_dt, center, bandwidth, duration, ref_level, poll_ids_set, lora_dev)
         _indicate_run_ready(poll_ids_set, lora_dev)
         unique_save_path = _get_save_path(folder_dt)
-        unique_save_path.mkdir()
+        unique_save_path.mkdir(exist_ok=True)
         save_path = unique_save_path / f"rx{rx_dev.node_id}"
         try:
             print(f"Saving to {save_path}")
@@ -222,19 +235,23 @@ def _collect_polling(lora_port: Path,
         except KeyboardInterrupt:
             print("No data captured")
             shutil.rmtree(unique_save_path)
-        rx_dev.stop()
+            try:
+                rx_dev.stop()
+            except RuntimeError:
+                pass
         lora_dev.reboot(5)
+        time.sleep(5)
         run = confirm("Start another run with the same parameters")
         lora_dev.start_driver()
 
 
 def collect(
         lora_port: Path,
-        /,
         center: float | None = None,
         bandwidth: float | None = None,
         duration: int | None = None,
         ref_level: float | None = None,
+        /,
         gps_ts: Annotated[bool, tyro.conf.FlagCreatePairsOff, tyro.conf.arg(aliases=["-g"])] = False,
         quiet: Annotated[bool, tyro.conf.FlagCreatePairsOff, tyro.conf.arg(aliases=["-q"])] = False,
         now: Annotated[bool, tyro.conf.FlagCreatePairsOff] = False,
@@ -248,7 +265,7 @@ def collect(
         center: Center frequency in Hz.
         bandwidth: Bandwidth in Hz.
         duration: The duration of the capture in seconds.
-        ref_level: The duration of the run.
+        ref_level: The receiver reference level or sensitivity in dB.
         gps_ts: Use GPS timestamping.
         quiet: Run in quiet mode.
         now: Start measurement now.
